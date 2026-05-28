@@ -1,7 +1,7 @@
 # khan-skycard
 
 **Khan Automation — Home Assistant Custom Energy Flow Card · Sky Edition**
-`khan-skycard.js` · Sky Edition **v1.0.0-pre** *(pre-release)*<img width="1640" height="2798" alt="IMG_20260528_175257" src="https://github.com/user-attachments/assets/1f4c0030-6bde-4b70-b3ee-ea5098293b9b" />
+`khan-skycard.js` · Sky Edition **v1.0.4-pre** *(pre-release)*<img width="1640" height="2798" alt="IMG_20260528_175257" src="https://github.com/user-attachments/assets/1f4c0030-6bde-4b70-b3ee-ea5098293b9b" />
 
 
 >  **Note:** This is a pre-release. Expect rough edges. The sky image assets (13 PNGs) must be placed manually — see [Sky Images](#sky-images) below.
