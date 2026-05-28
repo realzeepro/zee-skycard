@@ -89,7 +89,9 @@ _show_ev	false	Show EV charger section
 _labels_custom_entities	false	Unlock label overrides
 invert_grid_power	true	GoodWe active_power: positive = export
 weather_entity	weather.home	Entity for sky background
+
 🖼️ Sky Image Pack
+
 The sky images are not included in the main repository because of their size.
 You must download the separate ZIP from the Releases page.
 
@@ -152,11 +154,3 @@ text
 
 ---
 
-## ✅ Instructions to use
-
-1. Replace `thekhan1122E` with your actual GitHub username in all places (the repository URL and the release link).
-2. Replace `your-image-url.com/preview.png` with an actual screenshot link (you can upload an image to the repository and use the raw URL).
-3. Replace `[Original Author]` and the original K‑Flow Card link if you know it; otherwise just write “the original K‑Flow Card by rsc (or unknown)”.
-4. Save the file as `README.md` and commit it to your repository root.
-
-Now your `khan-skycard` repository has a complete, professional README that explains everything – from installation to customisation – while clearly stating your non‑commercial, fork‑allowed license.
