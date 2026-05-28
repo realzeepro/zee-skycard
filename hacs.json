@@ -1,3 +1,6 @@
 {
-  "name": "Khan SkyCard",
+  "name": "khan-skycard",
+  "filename": "khan-skycard.js",
+  "content_in_root": true,
+  "include": ["dist/*.png"]
 }
