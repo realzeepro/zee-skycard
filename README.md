@@ -4,7 +4,7 @@
 `khan-skycard.js` · Sky Edition **v1.0.0-pre** *(pre-release)*<img width="1640" height="2798" alt="IMG_20260528_175257" src="https://github.com/user-attachments/assets/1f4c0030-6bde-4b70-b3ee-ea5098293b9b" />
 
 
-> **Note:** This a pre-release. Expect rough edges. The sky image assets (13 PNGs) must be placed manually — see [Sky Images]() below.
+>  **Note:** This is a pre-release. Expect rough edges. The sky image assets (13 PNGs) must be placed manually — see [Sky Images](#sky-images) below.
 
 > **Origin:** `khan-skycard` is a full visual overhaul of [`k-flow-card`](https://github.com/thekhan1122/k-flow-card) and lives in its own separate repository. It shares the same entity schema and visual editor but replaces the entire SVG canvas with a photographic background system and redesigned celestial / inverter visuals.
 
