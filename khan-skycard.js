@@ -1,9 +1,9 @@
-// khan-skycard.js – Sky Edition v2.0.0
+// khan-skycard.js – Sky Edition v1.0.0
 // ═══════════════════════════════════════════════════════════════
 // CHANGELOG
 // ═══════════════════════════════════════════════════════════════
 //
-// Sky v2.0.0  �  Full photographic background + visual overhaul
+// Sky v1.0.0  �  Full photographic background + visual overhaul
 //   LAYOUT
 //   - Background: full-card photographic PNG (13 weather/time variants).
 //     Sky images live at /local/community/khan-skycard/sky/
@@ -34,7 +34,7 @@
 //   - PV blocks: flat uniform-height coloured segments (green → cyan → yellow).
 //   - PWR bar: square-cornered with live percentage label, colour blue → orange.
 //
-// v1.1.0  �  Unified Edition (see git history for full notes)
+// v1.0.0  �  Unified Edition (see git history for full notes)
 
 // ═══════════════════════════════════════════════════════════════
 // VISUAL EDITOR
