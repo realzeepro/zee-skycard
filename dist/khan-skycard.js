@@ -1,44 +1,5 @@
 // khan-skycard.js – Sky Edition v2.0.0
-// ═══════════════════════════════════════════════════════════════
-// CHANGELOG
-// ═══════════════════════════════════════════════════════════════
-//
-// Sky v2.0.0  �  Full photographic background + visual overhaul
-//   LAYOUT
-//   - Background: full-card photographic PNG (13 weather/time variants).
-//     Sky images live at /local/community/khan-skycard/sky/
-//     Names: sky-clear-day, sky-clear-dawn, sky-clear-dusk,
-//            sky-night-clear, sky-partlycloudy-day, sky-partlycloudy-night,
-//            sky-cloudy-day, sky-cloudy-night, sky-rainy-day, sky-rainy-night,
-//            sky-thunderstorm, sky-snowy-day, sky-fog-day
-//   - Grid tower and house are part of the photo � SVG icon overlays removed.
-//   - Battery cylinder removed from photo; SVG battery (fill bar, SOC %, voltage)
-//     retained on the RIGHT side, mirrored from previous left position.
-//   - Grid pylon moved to LEFT to match photo composition.
-//   INVERTER
-//   - Large INV box replaced with a tiny amber-bordered pill badge (64×22 px)
-//     positioned between the house window pillars at (228, 311).
-//   - Floating glassmorphism banner above the badge shows INV name, TEMP, LOAD %.
-//   CELESTIAL
-//   - Arc path, horizon line, rise/set dots and time labels removed.
-//   - Sun and moon travel freely without an arc.
-//   - Sun (_sunOrbHTML): full photorealistic rewrite � atmospheric scatter halo,
-//     mid corona, inner halo, 16 alternating corona rays (inline SVG, 1 rpm rotation),
-//     brilliant core with 4-layer box-shadow. Colour shifts horizon-orange → zenith-white.
-//   - Moon (_moonSVG): full rewrite � SVG mask crescent, earthshine blue glow,
-//     limb-darkening surface gradient, 6 craters clipped to lit face, limb brightening.
-//   FLOW PATHS
-//   - All paths rerouted to tiny INV badge: grid and battery converge at y=320;
-//     load runs vertically from y=430 to badge bottom at y=335.
-//   PV / PWR BAR
-//   - PV blocks: flat uniform-height coloured segments (green → cyan → yellow).
-//   - PWR bar: square-cornered with live percentage label, colour blue → orange.
-//
-// v1.1.0  �  Unified Edition (see git history for full notes)
 
-// ═══════════════════════════════════════════════════════════════
-// VISUAL EDITOR
-// ═══════════════════════════════════════════════════════════════
 class KhanSkyCardEditor extends HTMLElement {
   constructor() {
     super();
@@ -84,13 +45,15 @@ class KhanSkyCardEditor extends HTMLElement {
     this._config = { ...this._config, [key]: value };
     this._fireChanged();
     if (key === '_show_battery' || key === '_show_battery2' || key === '_show_pv_extra' ||
-        key === '_show_ev'      || key === 'battery_cap_unit' || key === '_labels_custom_entities' ||
+        key === '_show_ev'      || key === '_show_3phase'   || key === 'battery_cap_unit' || key === '_labels_custom_entities' ||
+        key === '_show_extra_tiles'                                                        ||
         key === 'label_cell_temp_minmax' || key === 'label_bms_temp'         ||
         key === 'label_min_cell'         || key === 'label_max_cell'         ||
         key === 'label_batt_dis'         || key === 'label_total_pv_gen'     ||
         key === 'label_entity_cell_temp' || key === 'label_entity_bms_temp'  ||
         key === 'label_entity_min_cell'  || key === 'label_entity_max_cell'  ||
-        key === 'label_entity_batt_dis'  || key === 'total_pv_gen_entity')
+        key === 'label_entity_batt_dis'  || key === 'total_pv_gen_entity'    ||
+        key.startsWith('_extra_tile_'))
       this._render();
   }
 
@@ -120,7 +83,7 @@ class KhanSkyCardEditor extends HTMLElement {
           padding: 10px 14px;
           background: var(--secondary-background-color, rgba(0,0,0,.04));
           font-size: .82rem;
-          font-weight: 700;
+          font-weight: 650;
           letter-spacing: .5px;
           text-transform: uppercase;
           color: var(--secondary-text-color);
@@ -457,6 +420,8 @@ class KhanSkyCardEditor extends HTMLElement {
       numberField('pv_max_power',       'PV Array Max Power',    0, 30000, 100, 'W'),
       numberField('inverter_max_power', 'Inverter Max Power',    0, 20000, 100, 'W'),
       divider(),
+      numberField('lower_section_offset', 'Flow diagram vertical offset', -80, 80, 1, 'SVG units (− = up)'),
+      divider(),
       picker('weather_entity', 'Weather Entity (for sky images � optional)'),
     ]));
 
@@ -524,7 +489,7 @@ class KhanSkyCardEditor extends HTMLElement {
         const badge = document.createElement('span');
         badge.textContent = stateVal;
         badge.style.cssText = [
-          'font-size:.65rem', 'font-weight:700', 'letter-spacing:.3px',
+          'font-size:.65rem', 'font-weight:650', 'letter-spacing:.3px',
           'padding:1px 7px', 'border-radius:20px',
           'background:var(--primary-color,#03a9f4)', 'color:#fff',
           'text-transform:capitalize', 'flex-shrink:0',
@@ -562,35 +527,20 @@ class KhanSkyCardEditor extends HTMLElement {
       return info;
     })();
 
-    shell.appendChild(makeSection('labels', '🏷️', 'Labels', [
-      labelInfoBanner,
-      labelRow('label_cell_temp_minmax', 'Cell Temp Min/Max label', 'CELL TEMP MIN/MAX', 'label_entity_cell_temp', cellTempActive),
-      labelRow('label_bms_temp',         'BMS Temp label',          'BMS TEMP',          'label_entity_bms_temp',  bmsTempActive),
-      labelRow('label_min_cell',         'Min Cell label',          'Min Cell',          'label_entity_min_cell',  minCellActive),
-      labelRow('label_max_cell',         'Max Cell label',          'Max Cell',          'label_entity_max_cell',  maxCellActive),
-      labelRow('label_batt_dis',         'Batt Dis label',          'Batt Dis.',         'label_entity_batt_dis',  battDisActive),
-      labelRow('label_total_pv_gen',     'Total PV Gen label',      'TOTAL PV GEN.',     'total_pv_gen_entity',    totalPvGenActive),
-    ], { toggleKey: '_labels_custom_entities', toggleOn: labelsEnabled, hidden: !labelsEnabled }));
+    // ── Section order: General, Solar, Grid, Battery(+secondary), Inverter, Solar Extras, EV, Customize, Typography, Thresholds ──
 
-    shell.appendChild(makeSection('solar', '??', 'Solar', [
+    shell.appendChild(makeSection('solar', '☀️', 'Solar', [
       picker('pv1_power', 'PV1 Power'),
       picker('pv2_power', 'PV2 Power'),
-    ]));
-
-    shell.appendChild(makeSection('solar_extra', '??', 'Extra PV Strings', [
-      picker('pv3_power', 'PV3 Power', true),
-      picker('pv4_power', 'PV4 Power', true),
-    ], { toggleKey: '_show_pv_extra', toggleOn: showPVExtra, hidden: !showPVExtra }));
-
-    shell.appendChild(makeSection('solar_extras', '??', 'Solar Extras', [
-      picker('pv_total_power',  'Total PV Power',  true),
+      picker('pv_total_power', 'Total PV Power', true),
       divider(),
-      picker('inv_temp',        'Inverter Temp'),
-      picker('today_pv',        'Today PV Gen'),
-      picker('today_batt_chg',  'Today Batt Charge'),
-      picker('today_load',      'Today Load'),
-      picker('consump',         'House Consumption'),
+      makeSection('solar_extra', '➕', 'Extra PV Strings', [
+        picker('pv3_power', 'PV3 Power', true),
+        picker('pv4_power', 'PV4 Power', true),
+      ], { toggleKey: '_show_pv_extra', toggleOn: showPVExtra, hidden: !showPVExtra }),
     ]));
+
+    const show3Phase = !!(cfg._show_3phase);
 
     shell.appendChild(makeSection('grid', '🔌', 'Grid', [
       switchRow('invert_grid_power', '🔄 Invert grid power sign', 'Enable if positive = exporting (e.g. GoodWe active_power)'),
@@ -599,38 +549,56 @@ class KhanSkyCardEditor extends HTMLElement {
       picker('grid_import_energy', 'Grid Import Energy'),
       picker('grid_export_energy', 'Grid Export Energy', true),
       picker('grid_power_alt',     'Alt Grid Sensor',    true),
+      divider(),
+      makeSection('grid3phase', '⚡', '3-Phase Breakdown', [
+        picker('grid_phase_a', 'Phase L1 Power', true),
+        picker('grid_phase_b', 'Phase L2 Power', true),
+        picker('grid_phase_c', 'Phase L3 Power', true),
+      ], { toggleKey: '_show_3phase', toggleOn: show3Phase, hidden: !show3Phase }),
     ]));
 
-    shell.appendChild(makeSection('battery1', '??', 'Primary Battery', [
+    shell.appendChild(makeSection('battery1', '🔋', 'Battery', [
       switchRow('invert_battery_power', '🔄 Invert battery power sign', 'Enable if positive = discharging'),
       divider(),
-      picker('battery_soc',      'Battery SOC'),
-      picker('battery_power',    'Battery Power'),
-      picker('battery_current',  'Battery Current'),
-      picker('battery_voltage',  'Battery Voltage'),
-      pickerMaybeDisabled('battery_temp1',    'Temp 1',           cellTempLocked),
-      pickerMaybeDisabled('battery_temp2',    'Temp 2',           cellTempLocked),
-      pickerMaybeDisabled('battery_mos',      'BMS Temp',         bmsTempLocked),
-      pickerMaybeDisabled('battery_min_cell', 'Min Cell Voltage', minCellLocked),
-      pickerMaybeDisabled('battery_max_cell', 'Max Cell Voltage', maxCellLocked),
-      pickerMaybeDisabled('batt_dis',         'Discharge Today',  battDisLocked),
+      makeSection('batt1inner', '🔋', 'Primary Battery', [
+        picker('battery_soc',      'Battery SOC'),
+        picker('battery_power',    'Battery Power'),
+        picker('battery_current',  'Battery Current'),
+        picker('battery_voltage',  'Battery Voltage'),
+        pickerMaybeDisabled('battery_temp1',    'Temp 1',           cellTempLocked),
+        pickerMaybeDisabled('battery_temp2',    'Temp 2',           cellTempLocked),
+        pickerMaybeDisabled('battery_mos',      'BMS Temp',         bmsTempLocked),
+        pickerMaybeDisabled('battery_min_cell', 'Min Cell Voltage', minCellLocked),
+        pickerMaybeDisabled('battery_max_cell', 'Max Cell Voltage', maxCellLocked),
+        pickerMaybeDisabled('batt_dis',         'Discharge Today',  battDisLocked),
+        divider(),
+        picker('goodwe_battery_soc',  'Fallback SOC',     true),
+        picker('goodwe_battery_curr', 'Fallback Current', true),
+      ], { toggleKey: '_show_battery', toggleOn: showBatt1, hidden: !showBatt1 }),
       divider(),
-      picker('goodwe_battery_soc',  'Fallback SOC',     true),
-      picker('goodwe_battery_curr', 'Fallback Current', true),
-    ], { toggleKey: '_show_battery', toggleOn: showBatt1, hidden: !showBatt1 }));
+      makeSection('battery2', '🔋', 'Secondary Battery', [
+        picker('battery2_soc',      'SOC'),
+        picker('battery2_power',    'Power'),
+        picker('battery2_current',  'Current'),
+        picker('battery2_voltage',  'Voltage'),
+        pickerMaybeDisabled('battery2_mos', 'BMS Temp', bmsTempLocked),
+        divider(),
+        numberField('battery2_full_ah', 'Battery 2 Capacity (if different from Batt 1)', 0, 999, 1, 'Ah'),
+        numberField('battery2_full_wh', 'Battery 2 Capacity (if different from Batt 1)', 0, 999.99, 0.01, 'kWh'),
+      ], { toggleKey: '_show_battery2', toggleOn: showBatt2, hidden: !showBatt2 }),
+    ]));
 
-    shell.appendChild(makeSection('battery2', '??', 'Secondary Battery', [
-      switchRow('invert_battery_power', '🔄 Invert battery power sign', 'Shared with Primary'),
-      divider(),
-      picker('battery2_soc',      'SOC'),
-      picker('battery2_power',    'Power'),
-      picker('battery2_current',  'Current'),
-      picker('battery2_voltage', 'Voltage'),
-      pickerMaybeDisabled('battery2_mos',     'BMS Temp', bmsTempLocked),
-      divider(),
-      numberField('battery2_full_ah', 'Battery 2 Capacity (if different from Batt 1)', 0, 999, 1, 'Ah'),
-      numberField('battery2_full_wh', 'Battery 2 Capacity (if different from Batt 1)', 0, 999.99, 0.01, 'kWh'),
-    ], { toggleKey: '_show_battery2', toggleOn: showBatt2, hidden: !showBatt2 }));
+    shell.appendChild(makeSection('inverter', '🔄', 'Inverter', [
+      picker('inv_temp',   'Inverter Temp'),
+      picker('consump',    'House Consumption'),
+    ]));
+
+    shell.appendChild(makeSection('solar_extras', '📊', 'Solar Extras', [
+      picker('today_pv',       'Today PV Gen'),
+      picker('today_batt_chg', 'Today Batt Charge'),
+      picker('today_load',     'Today Load'),
+      picker('total_pv_gen_entity', 'Total PV Generation Entity'),
+    ]));
 
     shell.appendChild(makeSection('ev', '🚗', 'EV / Car Charger', [
       picker('charger_state',           'Charger State'),
@@ -640,6 +608,131 @@ class KhanSkyCardEditor extends HTMLElement {
       picker('charger_eta',             'Charge ETA (min)', true),
       numberField('charger_battery_capacity_wh', 'EV Battery Capacity', 0, 200000, 1, 'Wh'),
     ], { toggleKey: '_show_ev', toggleOn: showEV, hidden: !showEV }));
+
+    shell.appendChild(makeSection('customize', '🎨', 'Customize', [
+      labelInfoBanner,
+      labelRow('label_cell_temp_minmax', 'Cell Temp Min/Max label', 'CELL TEMP MIN/MAX', 'label_entity_cell_temp', cellTempActive),
+      labelRow('label_bms_temp',         'BMS Temp label',          'BMS TEMP',          'label_entity_bms_temp',  bmsTempActive),
+      labelRow('label_min_cell',         'Min Cell label',          'Min Cell',          'label_entity_min_cell',  minCellActive),
+      labelRow('label_max_cell',         'Max Cell label',          'Max Cell',          'label_entity_max_cell',  maxCellActive),
+      labelRow('label_batt_dis',         'Batt Dis label',          'Batt Dis.',         'label_entity_batt_dis',  battDisActive),
+      labelRow('label_total_pv_gen',     'Total PV Gen label',      'TOTAL PV GEN.',     'total_pv_gen_entity',    totalPvGenActive),
+      divider(),
+      (() => {
+        const lbl = document.createElement('div');
+        lbl.className = 'row-label';
+        lbl.style.cssText = 'font-size:.78rem;font-weight:600;color:var(--secondary-text-color);margin-bottom:8px;margin-top:4px;';
+        lbl.textContent = '🏷️ Per-Tile Font Sizes (rem)';
+        return lbl;
+      })(),
+      (() => {
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;';
+        const tiles = [
+          ['label_cell_temp_size',  'Cell Temp Label'],
+          ['val_cell_temp_size',    'Cell Temp Value'],
+          ['label_bms_temp_size',   'BMS Temp Label'],
+          ['val_bms_temp_size',     'BMS Temp Value'],
+          ['label_min_cell_size',   'Min Cell Label'],
+          ['val_min_cell_size',     'Min Cell Value'],
+          ['label_max_cell_size',   'Max Cell Label'],
+          ['val_max_cell_size',     'Max Cell Value'],
+          ['label_batt_dis_size',   'Batt Dis Label'],
+          ['val_batt_dis_size',     'Batt Dis Value'],
+          ['label_total_pv_size',   'Total PV Label'],
+          ['val_total_pv_size',     'Total PV Value'],
+          ['label_endurance_size',  'Endurance Label'],
+          ['val_endurance_size',    'Endurance Value'],
+        ];
+        tiles.forEach(([key, label]) => {
+          grid.appendChild(numberField(key, label, 0.3, 3.0, 0.01, 'rem'));
+        });
+        return grid;
+      })(),
+    ], { toggleKey: '_labels_custom_entities', toggleOn: labelsEnabled, hidden: !labelsEnabled }));
+
+    // ── Extra Tiles section (6 fully customizable tiles) ──
+    const extraTilesEnabled = !!(cfg._show_extra_tiles);
+    const extraTileRows = [];
+    for (let i = 1; i <= 6; i++) {
+      const enabledKey  = `_extra_tile_${i}_enabled`;
+      const labelKey    = `_extra_tile_${i}_label`;
+      const entityKey   = `_extra_tile_${i}_entity`;
+      const iconKey     = `_extra_tile_${i}_icon`;
+      const labelSzKey  = `_extra_tile_${i}_label_size`;
+      const valueSzKey  = `_extra_tile_${i}_value_size`;
+      const tileOn      = !!(cfg[enabledKey]);
+
+      const tileSection = makeSection(
+        `extra_tile_${i}`,
+        tileOn ? '✅' : '⬜',
+        `Extra Tile ${i}`,
+        [
+          textField(labelKey,   'Label text',   `Tile ${i}`),
+          textField(iconKey,    'Icon (emoji)',  '⚡'),
+          (() => {
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'margin-bottom:14px;';
+            const entityLabel = document.createElement('div');
+            entityLabel.style.cssText = 'font-size:.72rem;color:var(--secondary-text-color);padding:0 2px 4px;line-height:1;';
+            entityLabel.textContent = 'Entity';
+            const currentId = cfg[entityKey];
+            if (currentId && this._hass && this._hass.states[currentId]) {
+              const stateVal = this._hass.states[currentId].state;
+              const badge = document.createElement('span');
+              badge.textContent = ' → ' + stateVal;
+              badge.style.cssText = 'font-size:.65rem;font-weight:650;color:var(--primary-color,#03a9f4);';
+              entityLabel.appendChild(badge);
+            }
+            const sel = document.createElement('ha-selector');
+            sel.hass = this._hass;
+            sel.selector = { entity: {} };
+            sel.value = cfg[entityKey] || '';
+            sel.style.cssText = 'width:100%;display:block;';
+            sel.addEventListener('value-changed', (ev) => { ev.stopPropagation(); this._set(entityKey, ev.detail.value || ''); });
+            wrap.appendChild(entityLabel);
+            wrap.appendChild(sel);
+            return wrap;
+          })(),
+          (() => {
+            const grid = document.createElement('div');
+            grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;';
+            grid.appendChild(numberField(labelSzKey, 'Label size (rem)', 0.3, 3.0, 0.01));
+            grid.appendChild(numberField(valueSzKey, 'Value size (rem)',  0.3, 3.0, 0.01));
+            return grid;
+          })(),
+        ],
+        { toggleKey: enabledKey, toggleOn: tileOn, hidden: !tileOn }
+      );
+      extraTileRows.push(tileSection);
+    }
+    shell.appendChild(makeSection('extra_tiles', '🔧', 'Extra Tiles', extraTileRows,
+      { toggleKey: '_show_extra_tiles', toggleOn: extraTilesEnabled, hidden: !extraTilesEnabled }
+    ));
+
+    shell.appendChild(makeSection('thresholds', '⚡', 'Thresholds', [
+      (() => {
+        const info = document.createElement('div');
+        info.style.cssText = 'font-size:.72rem;line-height:1.5;color:var(--secondary-text-color);background:var(--secondary-background-color,rgba(0,0,0,.04));border:1px solid var(--divider-color,rgba(0,0,0,.10));border-radius:7px;padding:7px 10px;margin-bottom:10px;';
+        info.textContent = '⚡ When a value exceeds these thresholds, it turns amber (warn) or red (critical). Threshold color always overrides user color.';
+        return info;
+      })(),
+      numberField('thresh_temp_warn',       'Temp Warn',        0, 200, 1, '°C'),
+      numberField('thresh_temp_critical',   'Temp Critical',    0, 200, 1, '°C'),
+      divider(),
+      numberField('thresh_cell_v_low',      'Cell V Low',       0, 5,   0.01, 'V'),
+      numberField('thresh_cell_v_critical', 'Cell V Critical',  0, 5,   0.01, 'V'),
+      numberField('thresh_cell_v_high',     'Cell V High',      0, 5,   0.01, 'V'),
+      divider(),
+      numberField('thresh_soc_low',         'SOC Low',          0, 100, 1, '%'),
+      numberField('thresh_soc_critical',    'SOC Critical',     0, 100, 1, '%'),
+      divider(),
+      numberField('thresh_load_warn',       'Load Warn',        0, 100, 1, '%'),
+      numberField('thresh_load_critical',   'Load Critical',    0, 100, 1, '%'),
+      divider(),
+      numberField('thresh_endurance_low',   'Endurance Low',    0, 24,  0.5, 'h'),
+      numberField('thresh_endurance_crit',  'Endurance Crit',   0, 24,  0.5, 'h'),
+    ]));
 
     this.innerHTML = '';
     this.appendChild(shell);
@@ -739,6 +832,7 @@ class KhanSkyCard extends HTMLElement {
       battery2_full_wh: 0,
       inverter_max_power: 6000,
       pv_max_power: 7500,
+      lower_section_offset: 0,   // SVG units — negative = move up, positive = move down
       charger_state: '',
       charger_current: '',
       charger_power: '',
@@ -763,12 +857,38 @@ class KhanSkyCard extends HTMLElement {
       label_entity_batt_dis: '',
       _labels_custom_entities: false,
       grid_power_alt: 'sensor.grid_phase_a_power',
+      _show_3phase: false,
+      grid_phase_a: '',
+      grid_phase_b: '',
+      grid_phase_c: '',
       _show_battery: true,
       _show_battery2: false,
       invert_battery_power: false,
-      invert_grid_power: true,   // GoodWe active_power: positive = export (inverted vs import convention)
-      _show_pv_extra: false,   // combined toggle
+      invert_grid_power: true,
+      _show_pv_extra: false,
       _show_ev: false,
+      // Per-tile sizes (0 = use global)
+      label_cell_temp_size: 0, val_cell_temp_size: 0,
+      label_bms_temp_size: 0,  val_bms_temp_size: 0,
+      label_min_cell_size: 0,  val_min_cell_size: 0,
+      label_max_cell_size: 0,  val_max_cell_size: 0,
+      label_batt_dis_size: 0,  val_batt_dis_size: 0,
+      label_total_pv_size: 0,  val_total_pv_size: 0,
+      label_endurance_size: 0, val_endurance_size: 0,
+      // Extra Tiles (6 customizable)
+      _show_extra_tiles: false,
+      _extra_tile_1_enabled: false, _extra_tile_1_label: '', _extra_tile_1_entity: '', _extra_tile_1_icon: '⚡', _extra_tile_1_label_size: 0, _extra_tile_1_value_size: 0,
+      _extra_tile_2_enabled: false, _extra_tile_2_label: '', _extra_tile_2_entity: '', _extra_tile_2_icon: '📊', _extra_tile_2_label_size: 0, _extra_tile_2_value_size: 0,
+      _extra_tile_3_enabled: false, _extra_tile_3_label: '', _extra_tile_3_entity: '', _extra_tile_3_icon: '🌡️', _extra_tile_3_label_size: 0, _extra_tile_3_value_size: 0,
+      _extra_tile_4_enabled: false, _extra_tile_4_label: '', _extra_tile_4_entity: '', _extra_tile_4_icon: '💡', _extra_tile_4_label_size: 0, _extra_tile_4_value_size: 0,
+      _extra_tile_5_enabled: false, _extra_tile_5_label: '', _extra_tile_5_entity: '', _extra_tile_5_icon: '🔌', _extra_tile_5_label_size: 0, _extra_tile_5_value_size: 0,
+      _extra_tile_6_enabled: false, _extra_tile_6_label: '', _extra_tile_6_entity: '', _extra_tile_6_icon: '📡', _extra_tile_6_label_size: 0, _extra_tile_6_value_size: 0,
+      // Thresholds
+      thresh_temp_warn: 40, thresh_temp_critical: 50,
+      thresh_cell_v_low: 3.1, thresh_cell_v_critical: 3.0, thresh_cell_v_high: 3.65,
+      thresh_soc_low: 25, thresh_soc_critical: 15,
+      thresh_load_warn: 70, thresh_load_critical: 90,
+      thresh_endurance_low: 2, thresh_endurance_crit: 1,
     };
   }
 
@@ -911,7 +1031,11 @@ class KhanSkyCard extends HTMLElement {
 
   _battFill(soc){
     const ft=138,fb=269,fh=131;const fH=Math.round((soc||0)/100*fh),fY=fb-fH;let c,f,tc;
-    if(soc<=20){c='#ff2200';f='url(#battGlowRed)';tc='#fff';}else if(soc<=40){c='#f4d03f';f='url(#battGlowOrange)';tc='#000';}else if(soc<=75){c='#44ff00';f='url(#battGlowGreen)';tc='#fff';}else{c='#00f0ff';f='url(#battGlowCyan)';tc='#fff';}
+    const thresh_critical = Number(this.config?.thresh_soc_critical) || 15;
+    const thresh_warn     = Number(this.config?.thresh_soc_low)      || 25;
+    if(soc<=thresh_critical){ c='#ef4444'; f='url(#battGlowRed)';    tc='#fff'; }
+    else if(soc<=thresh_warn){ c='#f59e0b'; f='url(#battGlowOrange)'; tc='#000'; }
+    else                     { c='#38bdf8'; f='url(#battGlowCyan)';   tc='#fff'; }
     return{y:fY,height:fH,color:c,filter:fH>4?f:'none',textColor:tc};
   }
 
@@ -942,6 +1066,42 @@ class KhanSkyCard extends HTMLElement {
     if(pvT<=10)return'';const fl=this._flowLevel(pvT,'solar');const sY=by+28;const cp1Y=by+70;const cp2Y=by+90;const pD='M '+bx.toFixed(1)+','+sY.toFixed(1)+' C '+bx.toFixed(1)+','+cp1Y.toFixed(1)+' 260,'+cp2Y.toFixed(1)+' 260,290';const col='rgba(255,232,60,.95)',gc='rgba(255,190,20,.55)';const dD=(fl.dur*.8).toFixed(2),dL=(8+fl.size*1.5).toFixed(1),gL=(6+fl.size*1.2).toFixed(1),dT=(parseFloat(dL)+parseFloat(gL)).toFixed(1);let h='';h+='<path d="'+pD+'" fill="none" stroke="'+gc+'" stroke-width="6" stroke-dasharray="'+dL+' '+gL+'" stroke-linecap="round" opacity="0.25" filter="url(#arcSunF2)"><animate attributeName="stroke-dashoffset" from="'+dT+'" to="0" dur="'+dD+'s" repeatCount="indefinite" calcMode="linear"/></path>';h+='<path d="'+pD+'" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" stroke-dasharray="'+dL+' '+gL+'" stroke-linecap="round"><animate attributeName="stroke-dashoffset" from="'+dT+'" to="0" dur="'+dD+'s" repeatCount="indefinite" calcMode="linear"/></path>';h+='<path d="'+pD+'" fill="none" stroke="'+col+'" stroke-width="1.0" stroke-dasharray="'+dL+' '+gL+'" stroke-linecap="round" opacity="0.85"><animate attributeName="stroke-dashoffset" from="'+dT+'" to="0" dur="'+dD+'s" repeatCount="indefinite" calcMode="linear"/></path>';const wD=[{amp:6,dur:fl.dur*.9,ox:0,op:.9,sc:'rgba(255,255,255,0.92)',dLen:'3.0',dGap:'40.0'},{amp:10,dur:fl.dur*1.1,ox:3,op:.6,sc:col,dLen:'4.5',dGap:'50.0'}];const wc=Math.min(2,Math.max(1,Math.round(fl.count/5)));for(let wi=0;wi<wc;wi++){const w=wD[wi];const sC=Math.round(fl.count*.5),sD=w.dur.toFixed(2),sCy=(parseFloat(w.dLen)+parseFloat(w.dGap)).toFixed(1);for(let si=0;si<sC;si++){const fr=si/sC,ph=fr*Math.PI*2,sY2=(w.amp*Math.sin(ph+wi*1.1)).toFixed(1),sX=(w.ox+w.amp*.3*Math.cos(ph*.5)).toFixed(1),sDe=(fr*w.dur%w.dur).toFixed(3),sO=(w.op*(.5+.5*Math.abs(Math.sin(ph)))*.6).toFixed(2);h+='<g transform="translate('+sX+','+sY2+')"><path d="'+pD+'" fill="none" stroke="'+w.sc+'" stroke-width="1.2" stroke-dasharray="'+w.dLen+' '+w.dGap+'" stroke-linecap="round" opacity="'+sO+'"><animate attributeName="stroke-dashoffset" from="'+sCy+'" to="0" dur="'+sD+'s" begin="-'+sDe+'s" repeatCount="indefinite" calcMode="linear"/></path></g>';}}return h;
   }
 
+  _buildExtraTilesHTML() {
+    const enabled = [];
+    for (let i = 1; i <= 6; i++) {
+      if (this.config[`_extra_tile_${i}_enabled`]) enabled.push(i);
+    }
+    if (!enabled.length) return '';
+
+    // Split into rows of 3
+    let html = '';
+    for (let row = 0; row < Math.ceil(enabled.length / 3); row++) {
+      const rowTiles = enabled.slice(row * 3, row * 3 + 3);
+      html += `<div style="display:grid;grid-template-columns:repeat(${Math.min(rowTiles.length,3)},1fr);gap:8px;margin-top:8px">`;
+      rowTiles.forEach(i => {
+        const label  = this.config[`_extra_tile_${i}_label`] || `Tile ${i}`;
+        const icon   = this.config[`_extra_tile_${i}_icon`]  || '⚡';
+        const lSize  = Number(this.config[`_extra_tile_${i}_label_size`]) || 0;
+        const vSize  = Number(this.config[`_extra_tile_${i}_value_size`]) || 0;
+        // Only override font-size inline when explicitly set; otherwise let CSS vars take over
+        const lStyle = lSize > 0 ? ` style="font-size:${lSize}rem"` : '';
+        const vStyle = vSize > 0 ? ` style="color:#e0e8f0;font-size:${vSize}rem"` : ` style="color:#e0e8f0"`;
+        html += `
+        <div class="st">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="font-size:1.0rem;line-height:1;flex-shrink:0">${icon}</span>
+            <div style="min-width:0">
+              <div class="l"${lStyle}>${label}</div>
+              <div class="v" id="bExtraTile${i}"${vStyle}>--</div>
+            </div>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    return html;
+  }
+
   _buildStaticSVG() {
     const dual = !!(this.config._show_battery2);
     const showBatt1 = !!(this.config._show_battery !== false);
@@ -949,31 +1109,39 @@ class KhanSkyCard extends HTMLElement {
     const showPvExtra = !!(this.config._show_pv_extra);
     const iconPath = '/local/community/khan-skycard';    // icons served from HACS community folder
 
-    const pv3txt = showPvExtra ? `<text id="pv3label" x="8" y="424" font-size="9" fill="#8b949e" letter-spacing="1">PV3</text><text id="pv3FlowVal" x="8" y="438" font-size="12" font-weight="700" fill="#ffe83c">-- W</text>` : '';
-    const pv4txt = showPvExtra ? `<text id="pv4label" x="8" y="456" font-size="9" fill="#8b949e" letter-spacing="1">PV4</text><text id="pv4FlowVal" x="8" y="470" font-size="12" font-weight="700" fill="#ffe83c">-- W</text>` : '';
+    const pv3txt = showPvExtra ? `<text id="pv3FlowVal" x="425" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
+    const pv4txt = showPvExtra ? `<text id="pv4FlowVal" x="465" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
 
-    // EV placement — values only in 2-col layout near car inside garage, no icon
+    // EV banner — styled to match the PV sun bubble (sharp bottom-left, pill shape, 60% transparent)
     const evtxt = ev ? `<g id="evGroup">
-      <!-- EV flow: from house right side down into garage -->
-      <path id="flowHomeEV" d="M 345,322 V 375" fill="none" stroke="#00aaff" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6 5" opacity="0">
+      <!-- EV flow: from house right side down into EV -->
+      <path id="flowHomeEV" d="M 345,322 V 378" fill="none" stroke="#00aaff" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="6 5" opacity="0">
         <animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/>
       </path>
-      <!-- EV stats: 2-column grid near car. Left col: W / A  Right col: % / ETA -->
-      <text x="318" y="385" text-anchor="middle" font-size="7.5" fill="rgba(255,255,255,0.45)" letter-spacing="0.8">W</text>
-      <text x="372" y="385" text-anchor="middle" font-size="7.5" fill="rgba(255,255,255,0.45)" letter-spacing="0.8">SOC</text>
-      <text id="evPowerVal"   x="318" y="397" text-anchor="middle" font-size="11" font-weight="700" fill="#00aaff">-- W</text>
-      <text id="evSocVal"     x="372" y="397" text-anchor="middle" font-size="11" font-weight="700" fill="#4ade80">-- %</text>
-      <text x="318" y="408" text-anchor="middle" font-size="7.5" fill="rgba(255,255,255,0.45)" letter-spacing="0.8">A</text>
-      <text x="372" y="408" text-anchor="middle" font-size="7.5" fill="rgba(255,255,255,0.45)" letter-spacing="0.8">ETA</text>
-      <text id="evCurrentVal" x="318" y="419" text-anchor="middle" font-size="10" font-weight="600" fill="#88ccff">-- A</text>
-      <text id="evEtaVal"     x="372" y="419" text-anchor="middle" font-size="10" font-weight="600" fill="#4ade80">--</text>
+      <!-- EV banner — matches PV bubble style: sharp bottom-left, rounded other corners, 60% transparent -->
+      <g id="evBannerGroup" opacity="1">
+        <path d="M 308,390 L 308,375 A 11,11 0 0,1 319,364 L 408,364 A 11,11 0 0,1 419,375 L 419,377 A 11,11 0 0,1 408,388 L 320,388 L 308,390 Z"
+              fill="rgba(0,0,0,0.40)" stroke="rgba(0,170,255,0.50)" stroke-width="1.2"/>
+        <!-- W label + value -->
+        <text x="330" y="374" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.50)" letter-spacing="0.8">W</text>
+        <text id="evPowerVal"   x="330" y="384" text-anchor="middle" font-size="9.5" font-weight="650" fill="#00aaff">-- W</text>
+        <!-- A label + value -->
+        <text x="358" y="374" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.50)" letter-spacing="0.8">A</text>
+        <text id="evCurrentVal" x="358" y="384" text-anchor="middle" font-size="9.5" font-weight="600" fill="#88ccff">-- A</text>
+        <!-- SOC label + value -->
+        <text x="385" y="374" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.50)" letter-spacing="0.8">SOC</text>
+        <text id="evSocVal"     x="385" y="384" text-anchor="middle" font-size="9.5" font-weight="650" fill="#4ade80">-- %</text>
+        <!-- ETA label + value -->
+        <text x="410" y="374" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.50)" letter-spacing="0.8">ETA</text>
+        <text id="evEtaVal"     x="410" y="384" text-anchor="middle" font-size="9" font-weight="600" fill="#4ade80">--</text>
+      </g>
     </g>` : '';
 
     const batteryTip = `<rect x="75" y="122" width="18" height="6" rx="3" fill="url(#battCapGrad)"/>`;
 
     // Battery SVG – large cylinder matching model image, cyan fill, bold % text
     const battIconSection = !showBatt1 ? '' : (
-      `<g transform="translate(399, 126) scale(0.86, 0.95)">
+      `<g transform="translate(399, 140) scale(0.86, 0.95)">
         <g id="battIconWrap">
           <!-- Outer shell -->
           <rect x="49" y="128" width="70" height="148" rx="12" fill="url(#battShellGrad)"/>
@@ -1022,20 +1190,20 @@ class KhanSkyCard extends HTMLElement {
       .kfc-content{position:relative;z-index:1;margin-bottom:0}
       .st{background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:9px 8px;text-align:left}
       .stm{padding-left:8px;padding-right:8px}
-      .st .l{font-size:.56rem;color:#a8b4c8;letter-spacing:1.3px;text-transform:uppercase;margin-bottom:3px;font-weight:500;display:block;text-align:left}
-      .st .v{font-size:0.95rem;font-weight:700;color:#dde8f8;display:block;text-align:left}
+      .st .l{font-size:var(--kfc-label-size,.56rem);color:rgba(200,215,235,0.65);letter-spacing:1.3px;text-transform:uppercase;margin-bottom:3px;font-weight:500;display:block;text-align:left}
+      .st .v{font-size:var(--kfc-value-size,.95rem);font-weight:650;color:#e0e8f0;display:block;text-align:left}
       .dv{height:1px;background:rgba(255,255,255,.07);margin:10px 0}
-      .ct{font-size:.65rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#f39c4b;margin-bottom:8px;margin-top:10px;display:flex;align-items:center;gap:8px}
+      .ct{font-size:.65rem;font-weight:650;letter-spacing:2.5px;text-transform:uppercase;color:#f39c4b;margin-bottom:8px;margin-top:10px;display:flex;align-items:center;gap:8px}
       .ct::after{content:'';flex:1;height:1px;background:rgba(243,156,75,0.22)}
       .pvf{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:2px}
       .pvi{text-align:center;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
       .pvi .ico{font-size:1.7rem;margin-bottom:2px;display:block;text-align:center}
-      .pvi .lbl{font-size:.58rem;color:#a8b4c8;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:2px;display:block;text-align:center}
-      .pvi .val{font-size:1.1rem;font-weight:700;color:#dde8f8;display:block;text-align:center}
+      .pvi .lbl{font-size:var(--kfc-label-size,.58rem);color:rgba(200,215,235,0.65);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:2px;display:block;text-align:center}
+      .pvi .val{font-size:var(--kfc-value-size,1.1rem);font-weight:650;color:#e0e8f0;display:block;text-align:center}
       .pvi .val.yw{color:#f4d03f} text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-      .kfc-bars-row{display:flex;align-items:center;gap:8px;margin-top:10px;padding:0 1px}
+      .kfc-bars-row{display:flex;align-items:center;gap:8px;margin-top:0;padding:0 1px}
       .kfc-bar-col{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:4px}
-      .kfc-bar-lbl{font-size:.7rem;color:#7a8fa8;letter-spacing:1.5px;font-weight:600;white-space:nowrap;flex-shrink:0}
+      .kfc-bar-lbl{font-size:.7rem;color:rgba(200,215,235,0.60);letter-spacing:1.5px;font-weight:600;white-space:nowrap;flex-shrink:0}
       .kfc-bar-meter-wrap{flex:1 1 0;min-width:0;display:flex;align-items:center}
       .kfc-bar-pwr-slot{flex:1 1 0;min-width:0;position:relative;display:flex;align-items:center}
       .kfc-bar-pwr-slot .kfc-bar-meter-wrap{flex:1 1 0;width:100%;min-width:0}
@@ -1044,14 +1212,14 @@ class KhanSkyCard extends HTMLElement {
       .kfc-pv-seg{flex:1 1 0;min-width:0;height:100%;border-radius:2px}
       .kfc-pwr-fill-area{position:absolute;left:0;top:0;bottom:0;right:0;overflow:hidden;border-radius:2px}
       #pwrBar{position:absolute;top:0;left:0;bottom:0;width:0%;height:100%;border-radius:2px;transition:width .4s ease,background .4s ease}
-      .kfc-bar-pct{position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:.58rem;font-weight:700;color:#29b6f6;line-height:1;white-space:nowrap;z-index:2;pointer-events:none}
+      .kfc-bar-pct{position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:.58rem;font-weight:650;color:#29b6f6;line-height:1;white-space:nowrap;z-index:2;pointer-events:none}
     </style>
     <div class="kfc-shell" id="kfcShell">
       <div id="kfcSkyDiv" aria-hidden="true"></div>
       <div id="kfcBottomGrad" style="position:absolute;top:58%;left:0;right:0;bottom:0;pointer-events:none;z-index:0;border-radius:0 0 14px 14px;transition:background 1.4s ease"></div>
       <div class="kfc-content" style="transform:translateY(-14%)">
-      <div class="ct">? Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:700;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
-      <div style="width:100%"><svg id="flowSvg" viewBox="0 0 520 450" style="width:100%;display:block">
+      <div class="ct">? Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
+      <div style="width:100%"><svg id="flowSvg" viewBox="0 0 520 465" style="width:100%;display:block">
       <defs>
         <filter id="arcSunF" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="7"/></filter>
         <filter id="arcSunF2" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="3"/></filter>
@@ -1070,6 +1238,7 @@ class KhanSkyCard extends HTMLElement {
         <filter id="battGlowGreen"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="battGlowCyan"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="battGlowBolt"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+
         <filter id="iconGlowOrange" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="b"/><feFlood flood-color="rgba(255,140,0,0.6)" result="c"/><feComposite in="c" in2="b" operator="in" result="d"/><feMerge><feMergeNode in="d"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="iconGlowBlue" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="b"/><feFlood flood-color="rgba(30,144,255,0.6)" result="c"/><feComposite in="c" in2="b" operator="in" result="d"/><feMerge><feMergeNode in="d"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="iconGlowGreen" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10" result="b"/><feFlood flood-color="rgba(46,204,113,0.6)" result="c"/><feComposite in="c" in2="b" operator="in" result="d"/><feMerge><feMergeNode in="d"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -1092,7 +1261,9 @@ class KhanSkyCard extends HTMLElement {
         <marker id="arrowGreen" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0.5 L0,4.5 L4.5,2.5 z" fill="#39ff14"/></marker>
       </defs>
       <ellipse id="skyAura" cx="260" cy="84" rx="230" ry="110" fill="url(#dynAuraG)" opacity="0.35"/>
+    
       <!-- ── SUN/MOON ARC ── -->
+      
       <ellipse id="skyAura2" cx="260" cy="159" rx="230" ry="110" fill="url(#dynAuraG)" opacity="0"/>
       <!-- Dashed horizon line -->
       <line x1="55" y1="161" x2="477" y2="161" stroke="rgba(255,255,255,.18)" stroke-width="1" stroke-dasharray="4,9"/>
@@ -1100,13 +1271,19 @@ class KhanSkyCard extends HTMLElement {
       <circle cx="50"  cy="161" r="5"   fill="#f5c842"/>
       <circle cx="260" cy="161" r="3.5" fill="rgba(255,255,255,.30)"/>
       <circle cx="472" cy="161" r="5"   fill="#e05030"/>
+    
       <!-- Time labels -->
+    
       <text id="sunRiseLabel" x="50"  y="179" fill="rgba(255,255,255,.72)" font-size="11" font-weight="600" text-anchor="middle">--:--</text>
       <text x="260" y="179" fill="rgba(255,255,255,.32)" font-size="11" font-weight="400" text-anchor="middle">12:00</text>
       <text id="sunSetLabel"  x="472" y="179" fill="rgba(255,255,255,.72)" font-size="11" font-weight="600" text-anchor="middle">--:--</text>
+    
       <!-- Golden day-arc (thicker, matches model image) -->
+    
       <path id="sunArcTrack" d="M 42,161 Q 260,54 472,161" fill="none" stroke="url(#arcDayGrad)" stroke-width="2.0" stroke-linecap="round"/>
+    
       <!-- Night dashed arc -->
+    
       <path d="M 472,161 Q 260,54 42,161" fill="none" stroke="url(#arcNightGrad)" stroke-width="1.5" stroke-dasharray="4,6" opacity=".35"/>
       <g id="arcSunGroup" opacity="1">
         <!-- L4 outermost atmospheric haze pulsing -->
@@ -1136,66 +1313,95 @@ class KhanSkyCard extends HTMLElement {
               d="M 0,28 L 0,13 A 13,13 0 0,1 13,0 L 91,0 A 13,13 0 0,1 104,13 L 104,15 A 13,13 0 0,1 91,28 Z"
               fill="rgba(10,10,10,0.20)" stroke="#ffe040" stroke-width="1.5"/>
         <text id="pvBubbleVal" x="52" y="19" text-anchor="middle"
-              font-size="12" font-weight="700" fill="#ffe040">-- kW ⚡</text>
+              font-size="12" font-weight="650" fill="#ffe040">-- kW ⚡</text>
       </g>
-      <!-- ── ANIMATED FLOW LINES ── L-shaped, cyan=grid, green=battery ──
+      <!-- ── ANIMATED FLOW LINES ── L-shaped, cyan=grid, green=battery ── -->
+      <!-- ↓ lowerSection: translate Y only — arc above is untouched -->
+      <g id="lowerSection" transform="translate(0,0)">
+
+
+      <!-- L1/L2/L3 — vertical stack on left edge, inline with flow bar start from pole -->
+      <g id="grid3PhaseVertical" display="none">
+        <text x="7" y="280" font-size="7.5" fill="rgba(255,255,255,0.50)" letter-spacing="0.5">L1</text>
+        <text id="fcGridL1Val" x="7" y="290" font-size="9.5" font-weight="600" fill="#e0e8f0">-- W</text>
+        <text x="7" y="300" font-size="7.5" fill="rgba(255,255,255,0.50)" letter-spacing="0.5">L2</text>
+        <text id="fcGridL2Val" x="7" y="310" font-size="9.5" font-weight="600" fill="#e0e8f0">-- W</text>
+        <text x="7" y="320" font-size="7.5" fill="rgba(255,255,255,0.50)" letter-spacing="0.5">L3</text>
+        <text id="fcGridL3Val" x="7" y="330" font-size="9.5" font-weight="600" fill="#e0e8f0">-- W</text>
+      </g>
 
       <!-- GRID IN (importing, cyan): grid → house -->
-      <path id="flowGridIn"  d="M 81,305 H 167 V 322 H 195" fill="none" stroke="rgba(0,240,255,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
-      <path id="flowGridInC" d="M 81,305 H 167 V 322 H 195" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowCyan)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
+      <path id="flowGridIn"  d="M 81,327 H 167 V 339 H 195" fill="none" stroke="rgba(0,240,255,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
+      <path id="flowGridInC" d="M 81,327 H 167 V 339 H 195" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowCyan)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
 
       <!-- GRID OUT (exporting, cyan): house → grid -->
-      <path id="flowGridOut"  d="M 195,322 H 167 V 305 H 81" fill="none" stroke="rgba(0,240,255,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
-      <path id="flowGridOutC" d="M 195,322 H 167 V 305 H 81" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowCyan)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
+      <path id="flowGridOut"  d="M 195,339 H 167 V 327 H 81" fill="none" stroke="rgba(0,240,255,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
+      <path id="flowGridOutC" d="M 195,339 H 167 V 327 H 81" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowCyan)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
 
       <!-- Grid watt label mid-line -->
-      <text id="fcGridFlowVal" x="124" y="298" text-anchor="middle" font-size="13" font-weight="700" fill="#00f0ff">0 W</text>
+      <text id="fcGridFlowVal" x="124" y="322" text-anchor="middle" font-size="10" font-weight="650" fill="#00f0ff">0 W</text>
 
       ${showBatt1 ? `
       <!-- BATT IN (charging, green): house → battery -->
-      <path id="flowBattIn"  d="M 335,322 H 360 V 305 H 462" fill="none" stroke="rgba(57,255,20,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="4.0s" repeatCount="indefinite" calcMode="linear"/></path>
-      <path id="flowBattInC" d="M 335,322 H 360 V 305 H 462" fill="none" stroke="#39ff14" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowGreen)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="4.0s" repeatCount="indefinite" calcMode="linear"/></path>
+      <path id="flowBattIn"  d="M 335,339 H 360 V 327 H 462" fill="none" stroke="rgba(57,255,20,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="4.0s" repeatCount="indefinite" calcMode="linear"/></path>
+      <path id="flowBattInC" d="M 335,339 H 360 V 327 H 462" fill="none" stroke="#39ff14" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowGreen)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="4.0s" repeatCount="indefinite" calcMode="linear"/></path>
 
       <!-- BATT OUT (discharging, green): battery → house -->
-      <path id="flowBattOut"  d="M 462,305 H 360 V 322 H 335" fill="none" stroke="rgba(57,255,20,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="4.0s" repeatCount="indefinite" calcMode="linear"/></path>
-      <path id="flowBattOutC" d="M 462,305 H 360 V 322 H 335" fill="none" stroke="#39ff14" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowGreen)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="4.0s" repeatCount="indefinite" calcMode="linear"/></path>
+      <path id="flowBattOut"  d="M 462,327 H 360 V 339 H 335" fill="none" stroke="rgba(57,255,20,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="4.0s" repeatCount="indefinite" calcMode="linear"/></path>
+      <path id="flowBattOutC" d="M 462,327 H 360 V 339 H 335" fill="none" stroke="#39ff14" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowGreen)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="4.0s" repeatCount="indefinite" calcMode="linear"/></path>
 
       <!-- Batt watt label mid-line -->
-      <text id="fcBattFlowVal" x="400" y="298" text-anchor="middle" font-size="13" font-weight="700" fill="#39ff14">0 W</text>
+      <text id="fcBattFlowVal" x="400" y="322" text-anchor="middle" font-size="10" font-weight="650" fill="#39ff14">0 W</text>
       ` : ''}
 
       <!-- ── BATTERY SVG CYLINDER ── -->
       ${battIconSection}
 
 
-      <!-- ── TINY INV BADGE � centred above chimney/roofline ── -->
-      <rect id="fcInvRect" x="216" y="285" width="88" height="38" rx="10" fill="rgba(8,14,28,0.18)" stroke="rgba(244,169,59,0.65)" stroke-width="1.2"/>
-      <text id="invNameLabel" x="260" y="298" text-anchor="middle" font-size="8" font-weight="700" fill="#f4a93b" letter-spacing="1.5">INV</text>
-      <text id="invTempFlow" x="260" y="311" text-anchor="middle" font-size="9.5" font-weight="600" fill="#f0883e">-- °C</text>
-      <text id="invLoadPctFlow" x="260" y="320" text-anchor="middle" font-size="9" font-weight="600" fill="#58a6ff">-- %</text>
+      <!-- ── TINY INV BADGE − temp + load% ── -->
+      <rect id="fcInvRect" x="186" y="302" width="88" height="34" rx="10" fill="rgba(8,14,28,0.18)" stroke="rgba(244,169,59,0.65)" stroke-width="1.2"/>
+      <text id="invNameLabel" x="234" y="315" text-anchor="middle" font-size="8" font-weight="650" fill="#f4a93b" letter-spacing="1.5">INV</text>
+      <text id="invTempFlow" x="210" y="330" text-anchor="middle" font-size="9.5" font-weight="600" fill="#e0e8f0">-- °C</text>
+      <text id="invLoadPctFlow" x="258" y="330" text-anchor="middle" font-size="9.5" font-weight="600" fill="#e0e8f0">--%</text>
 
 
-      <!-- ── CROSS LABELS: PV center · GRID left · BATTERY right � all inline ── -->
-      <!-- Vertical dividers � 30% less visible -->
-      <line x1="182" y1="419" x2="182" y2="445" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
-      <line x1="327" y1="419" x2="327" y2="445" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
-      <!-- PV GENERATION � center column, inline with GRID/BATT -->
-      <text x="260" y="418" text-anchor="middle" font-size="8" fill="#ffffff" letter-spacing="1.2" font-weight="500">PV GENERATION</text>
-      <text id="fcPvGenBelowVal" x="260" y="436.5" text-anchor="middle" font-size="15" font-weight="700" fill="#ffe83c">-- kW</text>
-      <!-- Horizontal rule � 30% less visible -->
-      <line x1="10" y1="449" x2="510" y2="449" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
-      <!-- GRID col � left aligned with grid pole -->
-      <text x="63" y="418" text-anchor="middle" font-size="8" fill="#ffffff" letter-spacing="1.5" font-weight="500">GRID</text>
-      <text id="fcGridVal" x="63" y="436.5" text-anchor="middle" font-size="15" font-weight="700" fill="#58a6ff">0 W</text>
-      <!-- BATTERY col -->
-      <text id="fcBattVoltBelow" x="472" y="405" text-anchor="middle" font-size="10" font-weight="600" fill="rgba(255,255,255,0.92)">-- V</text>
-      <text x="472" y="418" text-anchor="middle" font-size="8" fill="#ffffff" letter-spacing="1.5" font-weight="500">BATTERY</text>
-      <text id="fcBattSocPct" x="472" y="436.5" text-anchor="middle" font-size="15" font-weight="700" fill="#00f0ff">--%</text>
 
+      <!-- ── TABLE ROW: sits immediately below battery bottom (y≈390) ── -->
+      <!-- Battery voltage — frozen, not part of the moved group -->
+      <text id="fcBattVoltBelow" x="400" y="338" text-anchor="middle" font-size="9.5" font-weight="600" fill="rgba(200,220,255,0.80)">-- V</text>
+       <text id="fcgridVoltBelow" x="124" y="338" text-anchor="middle" font-size="9.5" font-weight="600" fill="rgba(200,220,255,0.80)">-- V</text>
+
+      <!-- GRID / LOAD / PV cols + vertical dividers + horizontal rule — all pulled down together -->
+      <g transform="translate(0,28)">
+
+      <!-- Vertical dividers -->
+      <line x1="182" y1="405" x2="182" y2="430" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
+      <line x1="327" y1="405" x2="327" y2="430" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
+
+      <!-- GRID col -->
+      <text x="63" y="400" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">GRID</text>
+      <text id="fcGridVal" x="63" y="427" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">0 W</text>
+
+      <!-- LOAD col -->
+      <text x="254" y="400" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">LOAD</text>
+      <text id="fcLoadVal" x="254" y="427" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">-- W</text>
+
+      <!-- PV col -->
+      <text x="420" y="400" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.75)" letter-spacing="2.5" font-weight="570">PV</text>
+      <text id="fcPvGenBelowVal" x="-999" y="-999" font-size="1" fill="none">-- kW</text>
+      <text id="fcPv1SubVal" x="${showPvExtra ? '355' : '370'}" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#e0e8f0">-- W</text>
+      <text id="fcPv2SubVal" x="${showPvExtra ? '400' : '470'}" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#e0e8f0">-- W</text>
+      ${pv3txt}${pv4txt}
+
+      <!-- Horizontal rule — floor of table row -->
+      <line x1="10" y1="436" x2="510" y2="436" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
+
+      </g>
       ${evtxt}
+      </g><!-- /lowerSection -->
       </svg></div>`+
 
-      `<div class="kfc-bars-row">
+      `<div class="kfc-bars-row" style="margin-top:10px">
         <div class="kfc-bar-col">
           <span class="kfc-bar-lbl">&#x2014; PV</span>
           <div class="kfc-bar-meter-wrap"><div id="pvBlocks" class="kfc-bar-meter"></div></div>
@@ -1212,16 +1418,15 @@ class KhanSkyCard extends HTMLElement {
           </div>
         </div>
       </div>
-      <div class="dv"></div>
 
       <!-- Row 1: MODE | BMS TEMP | TOTAL PV GEN -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px">
         <div class="st">
           <div style="display:flex;align-items:center;gap:7px">
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0;color:#ffffff">⟳</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_cell_temp_minmax||'MODE'}</div>
-              <div class="v" id="bTemp1" style="color:#ffffff">--</div>
+              <div class="v" id="bTemp1" style="color:#e0e8f0">--</div>
             </div>
           </div>
         </div>
@@ -1230,7 +1435,7 @@ class KhanSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">&#x1F321;&#xFE0F;</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_bms_temp||'BMS TEMP'}</div>
-              <div class="v" id="bTemp2" style="color:#f39c4b">-- &#x00B0;C</div>
+              <div class="v" id="bTemp2" style="color:#e0e8f0">-- &#x00B0;C</div>
             </div>
           </div>
         </div>
@@ -1239,7 +1444,7 @@ class KhanSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">☀️</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_total_pv_gen||'TOTAL PV GEN.'}</div>
-              <div class="v" id="bTotalPvGen" style="color:#f4d03f">-- kWh</div>
+              <div class="v" id="bTotalPvGen" style="color:#e0e8f0">-- kWh</div>
             </div>
           </div>
         </div>
@@ -1252,7 +1457,7 @@ class KhanSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">🔋</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_min_cell||'MIN CELL'}</div>
-              <div class="v" id="bMinCell" style="color:#3fb950">-- V</div>
+              <div class="v" id="bMinCell" style="color:#e0e8f0">-- V</div>
             </div>
           </div>
         </div>
@@ -1261,7 +1466,7 @@ class KhanSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">🔋</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_max_cell||'MAX CELL'}</div>
-              <div class="v" id="bMaxCell" style="color:#3fb950">-- V</div>
+              <div class="v" id="bMaxCell" style="color:#e0e8f0">-- V</div>
             </div>
           </div>
         </div>
@@ -1270,7 +1475,7 @@ class KhanSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">💠</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_batt_dis||'BATT DIS.'}</div>
-              <div class="v" id="bBattDis" style="color:#dde8f8">-- kWh</div>
+              <div class="v" id="bBattDis" style="color:#e0e8f0">-- kWh</div>
             </div>
           </div>
         </div>
@@ -1289,6 +1494,7 @@ class KhanSkyCard extends HTMLElement {
           </div>
         </div>
       </div>
+      ${this._buildExtraTilesHTML()}
       <div class="ct">&#x2014; INVERTER</div>
       <div class="pvf">
         <div class="pvi">
@@ -1613,6 +1819,28 @@ class KhanSkyCard extends HTMLElement {
     const setAttr = (id, attr, val) => { const el = getEl(id); if (el) el.setAttribute(attr, val); };
     const setDisplay = (id, visible) => { const el = getEl(id); if (!el) return; el.style.display = visible ? '' : 'none'; };
 
+    // ── Lower section vertical offset (arc stays fixed) ──
+    const lowerSec = getEl('lowerSection');
+    if (lowerSec) {
+      const offset = Number(this.config.lower_section_offset) || 0;
+      lowerSec.setAttribute('transform', `translate(0,${offset})`);
+    }
+
+    // ── Threshold constants — parsed once, reused everywhere (no scattered Number() coercions) ──
+    const THR = {
+      tempWarn:      Number(this.config.thresh_temp_warn)       || 40,
+      tempCrit:      Number(this.config.thresh_temp_critical)   || 50,
+      cellVLow:      Number(this.config.thresh_cell_v_low)      || 3.1,
+      cellVCrit:     Number(this.config.thresh_cell_v_critical) || 3.0,
+      cellVHigh:     Number(this.config.thresh_cell_v_high)     || 3.65,
+      socLow:        Number(this.config.thresh_soc_low)         || 25,
+      socCrit:       Number(this.config.thresh_soc_critical)    || 15,
+      loadWarn:      Number(this.config.thresh_load_warn)       || 70,
+      loadCrit:      Number(this.config.thresh_load_critical)   || 90,
+      endurLow:      Number(this.config.thresh_endurance_low)   || 2,
+      endurCrit:     Number(this.config.thresh_endurance_crit)  || 1,
+    };
+
     // Fix #4: use null-aware helper so unavailable/unknown sensors show '--' not '0'
     const _n = (v, fallback = 0) => (v !== null && !isNaN(v)) ? v : fallback;
     const _nullOr0 = (v) => (v !== null && !isNaN(v)) ? v : 0; // for flow/direction values where 0 is valid
@@ -1655,14 +1883,11 @@ class KhanSkyCard extends HTMLElement {
     // battery_cap_unit: 'ah' uses battery_full_ah; 'kwh' uses battery_full_wh (stored as kWh, converted to Wh internally)
     const capUnit = this.config.battery_cap_unit || 'ah';
     const fullAh  = capUnit === 'ah'  ? (Number(this.config.battery_full_ah)  || 0) : 0;
-    // battery_full_wh entered in kWh (×1000 for internal Wh). In Ah mode, derive Wh from Ah × live voltage.
-    // battVolt1 is read below � forward-declare safe because JS hoists var, but we use const so we
-    // must read voltage first. We re-read it inline here before battVolt1 is const-declared.
-    const _voltForCap = _n(this._val(this.config.battery_voltage));
+    // battVolt1 already declared above — use directly for Ah→Wh conversion (DRY)
     const fullWh  = capUnit === 'kwh' ? (Number(this.config.battery_full_wh) || 0) * 1000
-                                      : (fullAh > 0 && _voltForCap > 0 ? fullAh * _voltForCap : 0);
-    const invMax = Number(this.config.inverter_max_power) || 6000;
-    const pvMax  = Number(this.config.pv_max_power)       || 7500;
+                                      : (fullAh > 0 && battVolt1 > 0 ? fullAh * battVolt1 : 0);
+    const invMax = Math.max(1, Number(this.config.inverter_max_power) || 6000);
+    const pvMax  = Number(this.config.pv_max_power) || 7500;
 
     const remCap1 = fullAh > 0 ? (battSoc1 / 100) * fullAh : 0;
     // Fix #14: dual-battery charging ETA � battery2_full_wh entered in kWh, ×1000 for internal Wh
@@ -1803,7 +2028,7 @@ class KhanSkyCard extends HTMLElement {
     const isCharging1 = battPwr1 > 49;
     const showBattIn = battPwr1 > 49;
     const showBattOut = battPwr1 < -49;
-    const battLineColor = '#39ff14';  // green matching model
+    const battLineColor = '#38bdf8';  // indcolor: active flow blue
     let battDur = '4.0s', battShowIn = false, battShowOut = false;
     if (absPwr1 < 10) { battShowIn = false; battShowOut = false; }
     else if (absPwr1 < 50) { battShowIn = showBattIn; battShowOut = showBattOut; }
@@ -1814,10 +2039,13 @@ class KhanSkyCard extends HTMLElement {
     setFlow('flowBattOut',  battShowOut, absPwr1, battDur, battLineColor);
     setFlow('flowBattOutC', battShowOut, absPwr1, battDur, battLineColor);
     // Grid: cyan for both import and export (matches model)
-    setFlow('flowGridIn',   gridActive > 10,   gridActive,           flowDur(gridActive),            '#00f0ff');
-    setFlow('flowGridInC',  gridActive > 10,   gridActive,           flowDur(gridActive),            '#00f0ff');
-    setFlow('flowGridOut',  gridActive < -10,  Math.abs(gridActive), flowDur(Math.abs(gridActive)),  '#00f0ff');
-    setFlow('flowGridOutC', gridActive < -10,  Math.abs(gridActive), flowDur(Math.abs(gridActive)),  '#00f0ff');
+    setFlow('flowGridIn',   gridActive > 10,   gridActive,           flowDur(gridActive),            '#38bdf8');
+    setFlow('flowGridInC',  gridActive > 10,   gridActive,           flowDur(gridActive),            '#38bdf8');
+    setFlow('flowGridOut',  gridActive < -10,  Math.abs(gridActive), flowDur(Math.abs(gridActive)),  '#38bdf8');
+    setFlow('flowGridOutC', gridActive < -10,  Math.abs(gridActive), flowDur(Math.abs(gridActive)),  '#38bdf8');
+
+    // Grid pylon glow — orange when importing or exporting
+
 
     const absGrid = Math.abs(gridActive > 10 ? gridActive : 0);
     const absBattOut = battPwr1 < -10 ? Math.abs(battPwr1) : 0;
@@ -1830,12 +2058,12 @@ class KhanSkyCard extends HTMLElement {
     }
 
     const _battFlowW = absPwr1 >= 1000 ? (absPwr1 / 1000).toFixed(2) + ' kW' : absPwr1.toFixed(0) + ' W';
-    const _battFlowColor = absPwr1 < 10 ? '#8b949e' : '#39ff14';
+    const _battFlowColor = absPwr1 < 10 ? '#4a5568' : '#38bdf8';  // indcolor
     const fcBattFlowEl = getEl('fcBattFlowVal');
     if (fcBattFlowEl) { fcBattFlowEl.textContent = _battFlowW; fcBattFlowEl.setAttribute('fill', _battFlowColor); }
 
     const _gridFlowW = Math.abs(gridActive) >= 1000 ? (Math.abs(gridActive) / 1000).toFixed(2) + ' kW' : Math.abs(gridActive).toFixed(0) + ' W';
-    const _gridFlowColor = Math.abs(gridActive) < 10 ? '#8b949e' : '#00f0ff';
+    const _gridFlowColor = Math.abs(gridActive) < 10 ? '#4a5568' : '#38bdf8';  // indcolor
     const fcGridFlowEl = getEl('fcGridFlowVal');
     if (fcGridFlowEl) { fcGridFlowEl.textContent = _gridFlowW; fcGridFlowEl.setAttribute('fill', _gridFlowColor); }
     const gridFlowBg = getEl('gridFlowLabelBg');
@@ -1855,7 +2083,9 @@ class KhanSkyCard extends HTMLElement {
       setText('fcBattVal2', battSoc2 + '%'); setAttr('fcBattVal2', 'fill', fill2.textColor);
       // Update external labels below battery cylinder (average SOC for dual)
       const avgSoc = Math.round((battSoc1 + battSoc2) / 2);
-      const socPctElD = getEl('fcBattSocPct'); if (socPctElD) { socPctElD.textContent = battSoc1 + '% / ' + battSoc2 + '%'; socPctElD.setAttribute('fill', this._socColor(avgSoc)); socPctElD.setAttribute('font-size', '11'); }
+      const _socThreshCritD = THR.socCrit;
+      const _socThreshLowD  = THR.socLow;
+      const _dualSocColor   = avgSoc<=_socThreshCritD?'#ef4444':avgSoc<=_socThreshLowD?'#f59e0b':'#e0e8f0';
       const voltBelowElD = getEl('fcBattVoltBelow'); if (voltBelowElD) voltBelowElD.textContent = battVolt1.toFixed(1) + ' / ' + battVolt2.toFixed(1) + ' V';
       // Current & power shown in pill badge — no separate SVG text needed for dual
       const bolt1 = getEl('battBoltGroup1'), bolt2 = getEl('battBoltGroup2');
@@ -1871,7 +2101,9 @@ class KhanSkyCard extends HTMLElement {
       setText('battVoltageFlow', battVolt1.toFixed(1) + ' V');
       const bolt = getEl('battBoltGroup'); if (bolt) bolt.setAttribute('opacity', battPwr1 > 10 ? '1' : '0');
       // Update external SOC/voltage labels below battery cylinder
-      const socPctEl = getEl('fcBattSocPct'); if (socPctEl) { socPctEl.textContent = battSoc1 + '%'; socPctEl.setAttribute('fill', this._socColor(battSoc1)); }
+      const _socThreshCrit = THR.socCrit;
+      const _socThreshLow  = THR.socLow;
+      const _socFillColor  = battSoc1<=_socThreshCrit?'#ef4444':battSoc1<=_socThreshLow?'#f59e0b':'#e0e8f0';
       const voltBelowEl = getEl('fcBattVoltBelow'); if (voltBelowEl) voltBelowEl.textContent = battVolt1.toFixed(1) + ' V';
       // Fix #16: bTemp1/bTemp2 written once below in the label override block � skip early write
       // bMinCell, bMaxCell, bBattDis handled by label override block below
@@ -1921,7 +2153,7 @@ class KhanSkyCard extends HTMLElement {
         const val = parseFloat(totalPvGenState.state);
         const unit = totalPvGenState.attributes?.unit_of_measurement || 'kWh';
         _totalPvGenEl.textContent = isNaN(val) ? '--' : val.toFixed(2) + ' ' + unit;
-        _totalPvGenEl.style.color = '#f4d03f';
+        _totalPvGenEl.style.color = '#e0e8f0';
       } else {
         _totalPvGenEl.textContent = '-- kWh';
         _totalPvGenEl.style.color = '#8b949e';
@@ -1949,18 +2181,59 @@ class KhanSkyCard extends HTMLElement {
     if (battDirEl) battDirEl.textContent = '';
     setText('invTempFlow', invTemp.toFixed(1) + ' °C');
     setText('invNameLabel', this.config.inverter_name || 'INV');
-    setAttr('invTempFlow', 'fill', invTemp <= 45 ? '#58a6ff' : invTemp <= 55 ? '#f39c4b' : '#f85149');
-    const invLoadPct = Math.min(load / invMax * 100, 100).toFixed(0);
-    // Fix #8: toFixed() returns a string; use Number() for the colour comparison
-    setText('invLoadPctFlow', invLoadPct + '%');
-    setAttr('invLoadPctFlow', 'fill', load > 10 ? loadFlowColor : '#8b949e');
+    const _tWarn = THR.tempWarn;
+    const _tCrit = THR.tempCrit;
+    setAttr('invTempFlow', 'fill', invTemp >= _tCrit ? '#ef4444' : invTemp >= _tWarn ? '#f59e0b' : '#e0e8f0');
+    const _lWarn = THR.loadWarn;
+    const _lCrit = THR.loadCrit;
+    const invLoadPct = load > 0 ? Math.min(load / invMax * 100, 100) : 0;
+    const _loadColor = invLoadPct >= _lCrit ? '#ef4444' : invLoadPct >= _lWarn ? '#f59e0b' : (load > 10 ? '#e0e8f0' : '#4a5568');
+    // Restore load% in INV badge
+    const invLoadPctEl = getEl('invLoadPctFlow');
+    if (invLoadPctEl) {
+      invLoadPctEl.textContent = load > 10 ? invLoadPct.toFixed(0) + '%' : '--%';
+      invLoadPctEl.setAttribute('fill', _loadColor);
+    }
+    // Load shown in battery column as headline value
+    const _loadFcEl = getEl('fcLoadVal');
+    if (_loadFcEl) {
+      _loadFcEl.textContent = load > 0 ? (load >= 1000 ? (load / 1000).toFixed(2) + ' kW' : load.toFixed(0) + ' W') : (this.config.consump ? '-- W' : '--');
+      _loadFcEl.setAttribute('fill', _loadColor);
+    }
 
     const gridDir = gridActive > 10 ? '▼ ' : gridActive < -10 ? '▲ ' : '';
     const absGrid2 = Math.abs(gridActive);
     const gridTxtFmt = absGrid2 >= 1000 ? (absGrid2 / 1000).toFixed(2) + ' kW' : absGrid2.toFixed(0) + ' W';
-    const gridCol = gridActive > 10 ? '#FF2929' : gridActive < -10 ? '#2ecc71' : '#8b949e';
+    const gridCol = gridActive > 10 ? '#ef4444' : gridActive < -10 ? '#4ade80' : '#4a5568';  // indcolor
     setText('fcGridVal', gridDir + gridTxtFmt);     setAttr('fcGridVal', 'fill', gridCol);
     setText('fcGridFlowVal', gridTxtFmt);           setAttr('fcGridFlowVal', 'fill', gridCol);
+
+    // ── 3-phase grid vertical stack (left edge) ──
+    const phase3Group = getEl('grid3PhaseVertical');
+    if (phase3Group) {
+      if (this.config._show_3phase) {
+        phase3Group.removeAttribute('display');
+        const _fmtPhase = (w) => {
+          const aw = Math.abs(w);
+          const sign = w < -10 ? '↑' : w > 10 ? '↓' : '';
+          return sign + (aw >= 1000 ? (aw / 1000).toFixed(1) + 'k' : aw.toFixed(0)) + 'W';
+        };
+        const phA = _n(this._val(this.config.grid_phase_a, true));
+        const phB = _n(this._val(this.config.grid_phase_b, true));
+        const phC = _n(this._val(this.config.grid_phase_c, true));
+        const _phColor = (w) => Math.abs(w) < 10 ? '#4a5568' : w > 10 ? '#ef4444' : '#4ade80';
+        const l1El = getEl('fcGridL1Val'); if (l1El) { l1El.textContent = _fmtPhase(phA); l1El.setAttribute('fill', _phColor(phA)); }
+        const l2El = getEl('fcGridL2Val'); if (l2El) { l2El.textContent = _fmtPhase(phB); l2El.setAttribute('fill', _phColor(phB)); }
+        const l3El = getEl('fcGridL3Val'); if (l3El) { l3El.textContent = _fmtPhase(phC); l3El.setAttribute('fill', _phColor(phC)); }
+      } else {
+        phase3Group.setAttribute('display', 'none');
+      }
+    }
+
+    // ── PV1/PV2 sub-row ──
+    const _fmtPvSub = (w) => w >= 1000 ? (w / 1000).toFixed(2) + 'kW' : w.toFixed(0) + 'W';
+    const pv1SubEl = getEl('fcPv1SubVal'); if (pv1SubEl) { pv1SubEl.textContent = _fmtPvSub(pv1); pv1SubEl.setAttribute('fill', pv1 > 10 ? '#e0e8f0' : '#4a5568'); }
+    const pv2SubEl = getEl('fcPv2SubVal'); if (pv2SubEl) { pv2SubEl.textContent = _fmtPvSub(pv2); pv2SubEl.setAttribute('fill', pv2 > 10 ? '#e0e8f0' : '#4a5568'); }
     // Update flow label pill border colour
     // pill badge removed
 
@@ -1968,7 +2241,7 @@ class KhanSkyCard extends HTMLElement {
     const pvGenBelowEl = getEl('fcPvGenBelowVal');
     if (pvGenBelowEl) {
       pvGenBelowEl.textContent = pvTotal >= 1000 ? (pvTotal / 1000).toFixed(2) + ' kW' : pvTotal.toFixed(0) + ' W';
-      pvGenBelowEl.setAttribute('fill', pvTotal > 10 ? loadFlowColor : '#8b949e');
+      pvGenBelowEl.setAttribute('fill', pvTotal > 10 ? '#e0e8f0' : '#4a5568');
     }
 
     if (this.config._show_pv_extra) {
@@ -1977,7 +2250,6 @@ class KhanSkyCard extends HTMLElement {
     }
 
     const invTempEl2 = getEl('invTempFlow'); if (invTempEl2) invTempEl2.style.display = '';
-    const invLoadEl2 = getEl('invLoadPctFlow'); if (invLoadEl2) invLoadEl2.style.display = '';
     // Fix #9: use toFixed(2) to prevent floating-point artefacts; show '--' when sensor unavailable
     setText('invTodayPv',      _todayPvRaw      !== null ? todayPv.toFixed(2)      + ' kWh' : '-- kWh');
     setText('invTodayBattChg', _todayBattChgRaw !== null ? todayBattChg.toFixed(2) + ' kWh' : '-- kWh');
@@ -2121,56 +2393,80 @@ class KhanSkyCard extends HTMLElement {
     const _bT1o = getEl('bTemp1');
     if (_bT1o) {
       if (cellTempCustom) {
-        if (!_cellTempRaw) { _bT1o.textContent = '--'; _bT1o.style.color = '#8b949e'; }
+        if (!_cellTempRaw) {
+          // Entity deleted or unavailable — fall back to default sensor
+          _bT1o.textContent = temp1_1.toFixed(1) + ' / ' + temp2_1.toFixed(1) + ' °C';
+          const _t1max = Math.max(temp1_1, temp2_1);
+          _bT1o.style.color = _t1max >= THR.tempCrit ? '#ef4444' : _t1max >= THR.tempWarn ? '#f59e0b' : '#e0e8f0';
+        }
         else if (_cellTempRaw.isText) { _bT1o.textContent = _cellTempRaw.text; _bT1o.style.color = '#c9d1d9'; }
         else { const fmt = _fmtCustom(_cellTempRaw.val, cellTempUnit); _bT1o.textContent = fmt.text; _bT1o.style.color = fmt.color; }
       } else {
         _bT1o.textContent = temp1_1.toFixed(1) + ' / ' + temp2_1.toFixed(1) + ' °C';
-        _bT1o.style.color = this._cellTempColor(Math.max(temp1_1, temp2_1));
+        const _t1max = Math.max(temp1_1, temp2_1);
+        _bT1o.style.color = _t1max >= THR.tempCrit ? '#ef4444' : _t1max >= THR.tempWarn ? '#f59e0b' : '#e0e8f0';
       }
     }
     const _bT2o = getEl('bTemp2');
     if (_bT2o) {
       if (bmsTempCustom) {
-        if (!_bmsTempRaw) { _bT2o.textContent = '--'; _bT2o.style.color = '#8b949e'; }
+        if (!_bmsTempRaw) {
+          // Entity deleted or unavailable — fall back to default sensor
+          _bT2o.textContent = mos1.toFixed(1) + (dual ? ' / ' + mos2.toFixed(1) : '') + ' °C';
+          const _t2val = dual ? Math.max(mos1, mos2) : mos1;
+          _bT2o.style.color = _t2val >= THR.tempCrit ? '#ef4444' : _t2val >= THR.tempWarn ? '#f59e0b' : '#e0e8f0';
+        }
         else if (_bmsTempRaw.isText) { _bT2o.textContent = _bmsTempRaw.text; _bT2o.style.color = '#c9d1d9'; }
         else { const fmt = _fmtCustom(_bmsTempRaw.val, bmsTempUnit); _bT2o.textContent = fmt.text; _bT2o.style.color = fmt.color; }
       } else {
         _bT2o.textContent = mos1.toFixed(1) + (dual ? ' / ' + mos2.toFixed(1) : '') + ' °C';
-        _bT2o.style.color = this._cellTempColor(dual ? Math.max(mos1, mos2) : mos1);
+        const _t2val = dual ? Math.max(mos1, mos2) : mos1;
+        _bT2o.style.color = _t2val >= THR.tempCrit ? '#ef4444' : _t2val >= THR.tempWarn ? '#f59e0b' : '#e0e8f0';
       }
     }
     const _bMno = getEl('bMinCell');
     if (_bMno) {
       if (minCellCustom) {
-        if (!_minCellRaw) { _bMno.textContent = '--'; _bMno.style.color = '#8b949e'; }
+        if (!_minCellRaw) {
+          // Entity deleted or unavailable — fall back to default sensor
+          _bMno.textContent = minCell1.toFixed(3) + ' V';
+          _bMno.style.color = (minCell1 < THR.cellVCrit || minCell1 > THR.cellVHigh) ? '#ef4444' : minCell1 < THR.cellVLow ? '#f59e0b' : '#e0e8f0';
+        }
         else if (_minCellRaw.isText) { _bMno.textContent = _minCellRaw.text; _bMno.style.color = '#c9d1d9'; }
         else { const fmt = _fmtCustom(_minCellRaw.val, minCellUnit); _bMno.textContent = fmt.text; _bMno.style.color = fmt.color; }
       } else {
         _bMno.textContent = minCell1.toFixed(3) + ' V';
-        _bMno.style.color = this._cellVoltColor(minCell1);
+        _bMno.style.color = (minCell1 < THR.cellVCrit || minCell1 > THR.cellVHigh) ? '#ef4444' : minCell1 < THR.cellVLow ? '#f59e0b' : '#e0e8f0';
       }
     }
     const _bMxo = getEl('bMaxCell');
     if (_bMxo) {
       if (maxCellCustom) {
-        if (!_maxCellRaw) { _bMxo.textContent = '--'; _bMxo.style.color = '#8b949e'; }
+        if (!_maxCellRaw) {
+          // Entity deleted or unavailable — fall back to default sensor
+          _bMxo.textContent = maxCell1.toFixed(3) + ' V';
+          _bMxo.style.color = (maxCell1 < THR.cellVCrit || maxCell1 > THR.cellVHigh) ? '#ef4444' : maxCell1 < THR.cellVLow ? '#f59e0b' : '#e0e8f0';
+        }
         else if (_maxCellRaw.isText) { _bMxo.textContent = _maxCellRaw.text; _bMxo.style.color = '#c9d1d9'; }
         else { const fmt = _fmtCustom(_maxCellRaw.val, maxCellUnit); _bMxo.textContent = fmt.text; _bMxo.style.color = fmt.color; }
       } else {
         _bMxo.textContent = maxCell1.toFixed(3) + ' V';
-        _bMxo.style.color = this._cellVoltColor(maxCell1);
+        _bMxo.style.color = (maxCell1 < THR.cellVCrit || maxCell1 > THR.cellVHigh) ? '#ef4444' : maxCell1 < THR.cellVLow ? '#f59e0b' : '#e0e8f0';
       }
     }
     const _bDiso = getEl('bBattDis');
     if (_bDiso) {
       if (battDisCustom) {
-        if (!_battDisRaw) { _bDiso.textContent = '--'; _bDiso.style.color = '#8b949e'; }
+        if (!_battDisRaw) {
+          // Entity deleted or unavailable — fall back to default sensor
+          _bDiso.textContent = battDis1Raw !== null ? battDis1.toFixed(2) + ' kWh' : '-- kWh';
+          _bDiso.style.color = '#e0e8f0';
+        }
         else if (_battDisRaw.isText) { _bDiso.textContent = _battDisRaw.text; _bDiso.style.color = '#c9d1d9'; }
         else { const fmt = _fmtCustom(_battDisRaw.val, battDisUnit); _bDiso.textContent = fmt.text; _bDiso.style.color = fmt.color; }
       } else {
         _bDiso.textContent = battDis1Raw !== null ? battDis1.toFixed(2) + ' kWh' : '-- kWh';
-        _bDiso.style.color = '';
+        _bDiso.style.color = '#e0e8f0';
       }
     }
 
@@ -2202,18 +2498,13 @@ class KhanSkyCard extends HTMLElement {
       const isChargingEV = chargerStateStr === 'charging';
       const isCompleted = chargerStateStr === 'completed' || chargerStateStr === 'finished';
       const evFlow = getEl('flowHomeEV');
-      const evIcon = getEl('evIconImg');
       if (evFlow) {
         if (isChargingEV) {
           evFlow.setAttribute('opacity', '0.9'); evFlow.setAttribute('stroke', '#00aaff');
-          // Fix #6: always reset opacity before applying filter (was stuck at 0.3 if previously disconnected)
-          if (evIcon) { evIcon.style.opacity = '1'; evIcon.setAttribute('filter', 'url(#iconGlowBlue)'); }
         } else if (isCompleted) {
           evFlow.setAttribute('opacity', '0');
-          if (evIcon) { evIcon.style.opacity = '1'; evIcon.setAttribute('filter', 'url(#iconGlowGreen)'); }
         } else {
           evFlow.setAttribute('opacity', '0');
-          if (evIcon) { evIcon.setAttribute('filter', ''); evIcon.style.opacity = '0.35'; }
         }
       }
       if (isChargingEV || isCompleted) {
@@ -2240,14 +2531,38 @@ class KhanSkyCard extends HTMLElement {
       }
       } // end else (_show_ev)
     }
+
+    // ── Extra Tiles dynamic update ──
+    for (let i = 1; i <= 6; i++) {
+      if (!this.config[`_extra_tile_${i}_enabled`]) continue;
+      const el = getEl(`bExtraTile${i}`);
+      if (!el) continue;
+      const entityId = this.config[`_extra_tile_${i}_entity`];
+      if (!entityId) { el.textContent = '--'; el.style.color = '#8b949e'; continue; }
+      const stateObj = this._hass?.states?.[entityId];
+      if (!stateObj || stateObj.state === 'unavailable' || stateObj.state === 'unknown') {
+        el.textContent = '--'; el.style.color = '#8b949e'; continue;
+      }
+      const rawVal = parseFloat(stateObj.state);
+      if (isNaN(rawVal)) {
+        // Text state — show as-is
+        el.textContent = stateObj.state;
+        el.style.color = '#c9d1d9';
+      } else {
+        const unit = (stateObj.attributes?.unit_of_measurement || '').trim();
+        const fmt = _fmtCustom(rawVal, unit);
+        el.textContent = fmt.text;
+        el.style.color = fmt.color;
+      }
+    }
   }
 }
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'khan-skycard',
   name: 'Khan SkyCard',
-  description: 'Real-time solar/battery/grid energy flow card with animated power paths, dual-battery support, EV charger integration, and per-tile label overrides.',
+  description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.0.0',
+  version: '4.0.0',
 });
 customElements.define('khan-skycard', KhanSkyCard);
