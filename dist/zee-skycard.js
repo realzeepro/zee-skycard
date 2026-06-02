@@ -555,6 +555,7 @@ class KhanSkyCardEditor extends HTMLElement {
       switchRow('invert_grid_power', '🔄 Invert grid power sign', 'Enable if positive = exporting (e.g. GoodWe active_power)'),
       divider(),
       picker('grid_active_power',  'Grid Active Power'),
+      picker('grid_active_voltage',  'Grid Active Voltage'),
       picker('grid_import_energy', 'Grid Import Energy'),
       picker('grid_export_energy', 'Grid Export Energy', true),
       picker('grid_import_today',  'Grid Import Today (kWh)', true),
@@ -808,6 +809,7 @@ class KhanSkyCard extends HTMLElement {
       pv4_power: '',
       pv_total_power: 'sensor.goodwe_pv_power',
       grid_active_power: 'sensor.goodwe_active_power',
+      grid_active_voltage: '',
       grid_import_energy: 'sensor.goodwe_today_energy_import',
       grid_export_energy: '',
       consump: 'sensor.goodwe_house_consumption',
@@ -1886,6 +1888,7 @@ class KhanSkyCard extends HTMLElement {
     const _gridPrimary = this._val(this.config.grid_active_power, true);
     let gridActive = _gridPrimary !== null ? _gridPrimary : _nullOr0(this._val(this.config.grid_power_alt, true));
     if (this.config.invert_grid_power) gridActive = -gridActive;
+    const _gridPrimaryVoltage = this._val(this.config.grid_active_voltage, true);
     const gridImport = _n(this._val(this.config.grid_import_energy));
     const gridExport = _n(this._val(this.config.grid_export_energy));
     const load = _n(this._val(this.config.consump, true));
@@ -2237,6 +2240,7 @@ class KhanSkyCard extends HTMLElement {
         gridVoltBelowEl.setAttribute('opacity', '0');
       } else {
         gridVoltBelowEl.setAttribute('opacity', '1');
+        gridVoltBelowEl.textContent = _gridPrimaryVoltage;
       }
     }
 
@@ -2687,7 +2691,7 @@ class KhanSkyCard extends HTMLElement {
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'khan-skycard',
-  name: 'Khan SkyCard',
+  name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
   version: '4.4.0',
