@@ -1,4 +1,4 @@
-// khan-skycard.js – Sky Edition v2.4.0
+// khan-skycard.js – Sky Edition v2.4.1
 
 class KhanSkyCardEditor extends HTMLElement {
   constructor() {
@@ -2109,6 +2109,7 @@ class KhanSkyCard extends HTMLElement {
 
     // Grid flow mid-label
     const gridIsActive = absGridActive > 10;
+    const gridTxtFmt = absGridActive >= 1000 ? (absGridActive / 1000).toFixed(2) + ' kW' : absGridActive.toFixed(0) + ' W';
     const _gridFlowW = gridIsActive ? gridTxtFmt : '0 W';
     const fcGridFlowEl = getEl('fcGridFlowVal');
     if (fcGridFlowEl) {
@@ -2218,7 +2219,7 @@ class KhanSkyCard extends HTMLElement {
     // Grid col: red=importing, green=exporting, gray=idle
     const gridCol = gridActive > 10 ? '#ef4444' : gridActive < -10 ? '#4ade80' : '#4a5568';
     const gridDir = gridActive > 10 ? '▼ ' : gridActive < -10 ? '▲ ' : '';
-    const gridTxtFmt = absGridActive >= 1000 ? (absGridActive / 1000).toFixed(2) + ' kW' : absGridActive.toFixed(0) + ' W';
+    
     const gridFcEl = getEl('fcGridVal');
     if (gridFcEl) {
       if (!gridIsActive) {
