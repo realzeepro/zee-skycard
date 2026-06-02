@@ -1,4 +1,4 @@
-// khan-skycard.js – Sky Edition v2.4.1
+// zee-skycard.js – Sky Edition v2.4.1
 
 class KhanSkyCardEditor extends HTMLElement {
   constructor() {
@@ -746,7 +746,7 @@ class KhanSkyCardEditor extends HTMLElement {
     this._rendered = true; // Fix #2: mark rendered so hass setter stops triggering full DOM rebuilds
   }
 }
-customElements.define('khan-skycard-editor', KhanSkyCardEditor);
+customElements.define('zee-skycard-editor', KhanSkyCardEditor);
 
 // ═══════════════════════════════════════════════════════════════
 // MAIN CARD
@@ -912,7 +912,7 @@ class KhanSkyCard extends HTMLElement {
   }
 
   getCardSize() { return 8; }
-  static getConfigElement() { return document.createElement('khan-skycard-editor'); }
+  static getConfigElement() { return document.createElement('zee-skycard-editor'); }
 
   setConfig(config) {
     const prev = this.config;
@@ -1139,7 +1139,7 @@ class KhanSkyCard extends HTMLElement {
     const showBatt1 = !!(this.config._show_battery !== false);
     const ev   = !!(this.config._show_ev);
     const showPvExtra = !!(this.config._show_pv_extra);
-    const iconPath = '/local/community/khan-skycard';    // icons served from HACS community folder
+    const iconPath = '/local/community/zee-skycard';    // icons served from HACS community folder
 
     const pv3txt = showPvExtra ? `<text id="pv3FlowVal" x="425" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
     const pv4txt = showPvExtra ? `<text id="pv4FlowVal" x="465" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
@@ -1560,7 +1560,7 @@ class KhanSkyCard extends HTMLElement {
 
   // ─────────────────────────────────────────────────────────────
   // SKY SYSTEM � image-based background with dynamic sun, moon, stars, weather overlays
-  // Images live at: /local/community/khan-skycard/sky/
+  // Images live at: /local/community/zee-skycard/sky/
   // Falls back to procedural CSS gradient if any image is missing (404).
   // ─────────────────────────────────────────────────────────────
 
@@ -1587,7 +1587,7 @@ class KhanSkyCard extends HTMLElement {
     if (!skyDiv) return;
     const isDay = !sun.night;
     const bell  = sun.bell ?? 0.5;
-    const BASE  = '/local/community/khan-skycard/sky';
+    const BASE  = '/local/community/zee-skycard/sky';
     const key   = this._skyImageKey(condition, isDay, bell);
 
     // Skip full rebuild if key unchanged (saves DOM thrash every hass update)
@@ -2690,10 +2690,10 @@ class KhanSkyCard extends HTMLElement {
 }
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: 'khan-skycard',
+  type: 'zee-skycard',
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
   version: '4.4.0',
 });
-customElements.define('khan-skycard', KhanSkyCard);
+customElements.define('zee-skycard', KhanSkyCard);
