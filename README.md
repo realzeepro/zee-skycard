@@ -2,7 +2,8 @@
 
 **Khan Automation — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`khan-skycard.js` · Sky Edition **v1.1.0 *<img width="1640" height="2798" alt="IMG_20260528_175257" src="https://github.com/user-attachments/assets/1f4c0030-6bde-4b70-b3ee-ea5098293b9b" />
+`khan-skycard.js` · Sky Edition **v1.1.1 *
+<img width="1419" height="2405" alt="Screenshot_2026-06-02-11-05-46-70_cbf47468f7ecfbd8ebcc46bf9cc626da" src="https://github.com/user-attachments/assets/9300fcb5-4b67-4eb7-8099-02701e8a5890" />
 
 
 > **Origin:** `khan-skycard` is a full visual overhaul of [`k-flow-card`](https://github.com/thekhan1122/k-flow-card) and lives in its own separate repository. It shares the same entity schema and visual editor but replaces the entire SVG canvas with a photographic background system and redesigned celestial / inverter visuals.
