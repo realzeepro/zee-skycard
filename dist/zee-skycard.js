@@ -1335,7 +1335,6 @@ class ZeeSkyCard extends HTMLElement {
   }
 
   _openCameraPopup() {
-    if (!this.config._show_camera) return;
     const cams = [];
     for (let i = 1; i <= 4; i++) {
       const eid = this.config[`camera_${i}_entity`];
@@ -1360,7 +1359,6 @@ class ZeeSkyCard extends HTMLElement {
   }
 
   _openSystemPopup() {
-    if (!this.config._show_system) return;
     const states = this._hass?.states || {};
     // Gather HA core info from configurator or supervisor
     const haVersion = (states['configurator']?.state || navigator.userAgent.match(/HomeAssistant\/([\d.]+)/)?.[1] || '--');
@@ -1383,7 +1381,6 @@ class ZeeSkyCard extends HTMLElement {
   }
 
   _openInverterPopup() {
-    if (!this.config._show_system) return;
     // Slider widgets for PV limit, charge/discharge current
     const pvLimit = this._val('number.goodwe_pv_limit_power');
     const chgCurr = this._val('number.goodwe_battery_charge_current');
@@ -1409,7 +1406,6 @@ class ZeeSkyCard extends HTMLElement {
   }
 
   _openBatteryPopup() {
-    if (!this.config._show_system) return;
     const _n = (v, f = 0) => (v !== null && !isNaN(v)) ? v : f;
     const soc1  = _n(this._val(this.config.battery_soc));
     const soc2  = this.config._show_battery2 ? _n(this._val(this.config.battery2_soc)) : null;
@@ -1441,7 +1437,6 @@ class ZeeSkyCard extends HTMLElement {
   }
 
   _openSmartPlugPopup() {
-    if (!this.config._show_smartplugs) return;
     const plugs = [];
     for (let i = 1; i <= 2; i++) {
       const eid = this.config[`smart_plug_${i}_entity`];
@@ -1472,7 +1467,6 @@ class ZeeSkyCard extends HTMLElement {
   }
 
   _openClimatePopup() {
-    if (!this.config._show_climate) return;
     const eid = this.config.climate_entity;
     const name = this.config.clim_ac_name || 'AC';
     const state = eid && this._hass?.states[eid] ? this._hass.states[eid] : null;
@@ -1536,6 +1530,7 @@ class ZeeSkyCard extends HTMLElement {
   }
 
   _buildStaticSVG() {
+    this._monListenersAttached = false;
     const dual = !!(this.config._show_battery2);
     const showBatt1 = !!(this.config._show_battery !== false);
     const ev   = !!(this.config._show_ev);
@@ -2024,44 +2019,29 @@ class ZeeSkyCard extends HTMLElement {
         </div>
       </div>
 
-      <!-- ── MONITORING SECTION ── -->
+      ${(() => {
+        const showCam = !!this.config._show_camera;
+        const showSys = !!this.config._show_system;
+        const showPlugs = !!this.config._show_smartplugs;
+        const showClim  = !!this.config._show_climate;
+        if (!showCam && !showSys && !showPlugs && !showClim) return '';
+        return `
       <div class="ct">&#x2014; MONITORING</div>
-      <div class="pvf" id="monRow1">
-        <div class="pvi" id="monTileCamera" style="cursor:pointer" onclick="this.getRootNode().host._openCameraPopup()">
-          <span class="ico">📷</span>
-          <span class="lbl">CAMERAS</span>
-          <span class="val" style="color:#4ade80;font-size:.68rem" id="monCamBadge">LIVE</span>
-        </div>
-        <div class="pvi" id="monTileSystem" style="cursor:pointer" onclick="this.getRootNode().host._openSystemPopup()">
-          <span class="ico">🖥️</span>
-          <span class="lbl">SYSTEM</span>
-          <span class="val" style="color:#58a6ff;font-size:.68rem" id="monSysBadge">STATS</span>
-        </div>
-        <div class="pvi" id="monTileInv" style="cursor:pointer" onclick="this.getRootNode().host._openInverterPopup()">
-          <span class="ico">⚡</span>
-          <span class="lbl">INVERTER</span>
-          <span class="val" style="color:#f4d03f;font-size:.68rem" id="monInvBadge">INFO</span>
-        </div>
-        <div class="pvi" id="monTileBatt" style="cursor:pointer" onclick="this.getRootNode().host._openBatteryPopup()">
-          <span class="ico">🔋</span>
-          <span class="lbl">BATTERY</span>
-          <span class="val" style="color:#3ce878;font-size:.68rem" id="monBattBadge">DETAIL</span>
-        </div>
-      </div>
-      <div id="monRow2" ${(!this.config._show_smartplugs && !this.config._show_climate) ? 'style="display:none"' : ''}>
-        <div class="pvf" style="margin-top:6px">
-          <div class="pvi" id="monTilePlugs" style="cursor:pointer;${this.config._show_smartplugs?'':'display:none'}" onclick="this.getRootNode().host._openSmartPlugPopup()">
-            <span class="ico">🔌</span>
-            <span class="lbl">SMART PLUGS</span>
-            <span class="val" style="color:#f39c4b;font-size:.68rem" id="monPlugBadge">CTRL</span>
-          </div>
-          <div class="pvi" id="monTileClimate" style="cursor:pointer;${this.config._show_climate?'':'display:none'}" onclick="this.getRootNode().host._openClimatePopup()">
-            <span class="ico">🌡️</span>
-            <span class="lbl" id="monClimLabel">${this.config.clim_ac_name||'CLIMATE'}</span>
-            <span class="val" style="color:#29b6f6;font-size:.68rem" id="monClimBadge">CTRL</span>
-          </div>
-        </div>
-      </div>
+      <div class="pvf" id="monRow1">${
+        showCam ? `<div class="pvi mon-tile" data-popup="camera" style="cursor:pointer"><span class="ico">📷</span><span class="lbl">CAMERAS</span><span class="val" style="color:#4ade80;font-size:.68rem">LIVE</span></div>` : ''
+      }${
+        showSys ? `<div class="pvi mon-tile" data-popup="system" style="cursor:pointer"><span class="ico">🖥️</span><span class="lbl">SYSTEM</span><span class="val" style="color:#58a6ff;font-size:.68rem">STATS</span></div>` : ''
+      }${
+        showSys ? `<div class="pvi mon-tile" data-popup="inverter" style="cursor:pointer"><span class="ico">⚡</span><span class="lbl">INVERTER</span><span class="val" style="color:#f4d03f;font-size:.68rem">INFO</span></div>` : ''
+      }${
+        showSys ? `<div class="pvi mon-tile" data-popup="battery" style="cursor:pointer"><span class="ico">🔋</span><span class="lbl">BATTERY</span><span class="val" style="color:#3ce878;font-size:.68rem">DETAIL</span></div>` : ''
+      }</div>${
+        (showPlugs || showClim) ? `<div id="monRow2"><div class="pvf" style="margin-top:6px">${
+          showPlugs ? `<div class="pvi mon-tile" data-popup="plugs" style="cursor:pointer"><span class="ico">🔌</span><span class="lbl">SMART PLUGS</span><span class="val" style="color:#f39c4b;font-size:.68rem">CTRL</span></div>` : ''
+        }${
+          showClim ? `<div class="pvi mon-tile" data-popup="climate" style="cursor:pointer"><span class="ico">🌡️</span><span class="lbl" id="monClimLabel">${this.config.clim_ac_name||'CLIMATE'}</span><span class="val" style="color:#29b6f6;font-size:.68rem">CTRL</span></div>` : ''
+        }</div></div>` : ''
+      }`;})()}
       </div><!-- /kfc-content -->
     </div><!-- /kfc-shell -->`;
   }
@@ -3300,20 +3280,31 @@ class ZeeSkyCard extends HTMLElement {
       }
     }
 
-    // ── Monitoring section dynamic visibility ──
-    const monRow2 = getEl('monRow2');
-    if (monRow2) {
-      const showPlugs = !!this.config._show_smartplugs;
-      const showClim  = !!this.config._show_climate;
-      monRow2.style.display = (showPlugs || showClim) ? '' : 'none';
-      const plugTile = getEl('monTilePlugs');
-      if (plugTile) plugTile.style.display = showPlugs ? '' : 'none';
-      const climTile = getEl('monTileClimate');
-      if (climTile) climTile.style.display = showClim ? '' : 'none';
+    // ── Monitoring section: attach click listeners once ──
+    if (!this._monListenersAttached) {
+      this._monListenersAttached = true;
+      const tiles = root.querySelectorAll('.mon-tile');
+      tiles.forEach(el => {
+        const popup = el.getAttribute('data-popup');
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          switch (popup) {
+            case 'camera':   this._openCameraPopup(); break;
+            case 'system':   this._openSystemPopup(); break;
+            case 'inverter': this._openInverterPopup(); break;
+            case 'battery':  this._openBatteryPopup(); break;
+            case 'plugs':    this._openSmartPlugPopup(); break;
+            case 'climate':  this._openClimatePopup(); break;
+          }
+        });
+      });
     }
     // Refresh climate name label
     const climLbl = getEl('monClimLabel');
     if (climLbl) climLbl.textContent = this.config.clim_ac_name || 'CLIMATE';
+    // Row2 visibility
+    const monRow2 = getEl('monRow2');
+    if (monRow2) monRow2.style.display = (!!this.config._show_smartplugs || !!this.config._show_climate) ? '' : 'none';
   }
 }
 window.customCards = window.customCards || [];
