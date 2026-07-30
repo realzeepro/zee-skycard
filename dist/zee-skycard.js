@@ -1687,7 +1687,7 @@ class ZeeSkyCard extends HTMLElement {
     <div class="kfc-shell" id="kfcShell">
       <div id="kfcSkyDiv" aria-hidden="true"></div>
       <div id="kfcBottomGrad" style="position:absolute;top:58%;left:0;right:0;bottom:0;pointer-events:none;z-index:0;border-radius:0 0 14px 14px;transition:background 1.4s ease"></div>
-      <div class="kfc-content" style="transform:translateY(-14%)">
+      <div class="kfc-content" style="transform:translateY(-105px)">
       <div class="ct">&#x2014; Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
       <div style="width:100%"><svg id="flowSvg" viewBox="0 0 520 465" style="width:100%;display:block">
       <defs>
