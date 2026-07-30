@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.15
+// zee-skycard.js – Sky Edition v2.6.16
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1206,27 +1206,32 @@ class ZeeSkyCard extends HTMLElement {
     hr = hr % 12 || 12;
     return 'Till ' + day + ' ' + hr + ':' + target.getMinutes().toString().padStart(2,'0') + ' ' + ampm;
   }
-  _fmtUptime(raw) {
-    if (!raw) return '--';
-    let ms = NaN;
-    const s = String(raw).trim();
-    if (/^\d{10,13}$/.test(s)) {
-      ms = Number(s) * (s.length <= 10 ? 1000 : 1);
-    } else {
-      const d = new Date(s);
-      if (!isNaN(d.getTime())) ms = d.getTime();
-    }
-    if (isNaN(ms)) return s;
-    const sec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+  _fmtDuration(sec) {
     const days = Math.floor(sec / 86400);
     const hrs = Math.floor((sec % 86400) / 3600);
     const mins = Math.floor((sec % 3600) / 60);
-    let r = '';
-    if (days > 0) r += days + ' Day' + (days !== 1 ? 's' : '') + ' ';
-    if (hrs > 0) r += hrs + ' Hour' + (hrs !== 1 ? 's' : '') + ' ';
-    if (days === 0 && mins > 0) r += mins + ' Minute' + (mins !== 1 ? 's' : '');
-    if (!r) r = 'Less than a minute';
-    return r.trim();
+    if (days > 0) return days + ' Day' + (days !== 1 ? 's' : '') + ' ' + hrs + ' Hour' + (hrs !== 1 ? 's' : '');
+    if (hrs > 0) return hrs + ' Hour' + (hrs !== 1 ? 's' : '') + ' ' + mins + ' Minute' + (mins !== 1 ? 's' : '');
+    if (mins > 0) return mins + ' Minute' + (mins !== 1 ? 's' : '');
+    return 'Less than a minute';
+  }
+  _fmtUptime(raw) {
+    if (!raw) return '--';
+    const s = String(raw).trim();
+    // Numeric — could be seconds since boot (<10 digits) or Unix timestamp (>=10 digits)
+    if (/^\d+(\.\d+)?$/.test(s)) {
+      const num = parseFloat(s);
+      if (s.length >= 10) {
+        const ms = num * (s.length <= 10 ? 1000 : 1);
+        return this._fmtDuration(Math.max(0, Math.floor((Date.now() - ms) / 1000)));
+      }
+      return this._fmtDuration(num);
+    }
+    // Date string — strip "at", "T", etc.
+    const clean = s.replace(/\s+at\s+/gi, ' ').replace('T', ' ');
+    const d = new Date(clean);
+    if (!isNaN(d.getTime())) return this._fmtDuration(Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000)));
+    return s;
   }
   _fmtNetwork(val) {
     if (val === null || val === undefined || !isFinite(val)) return '--';
@@ -1471,8 +1476,8 @@ class ZeeSkyCard extends HTMLElement {
   }
   _popupEntityItem(label, value, entityId, vClr = '#e0e8f0') {
     const eid = entityId || '';
-    const attr = eid ? ` data-eid="${eid}"` : '';
-    return `<div${attr} style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 12px;text-align:center${eid ? ';cursor:pointer' : ''}">
+    const click = eid ? ` onclick="const h=this.closest('[data-host]')._cardHost;h.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:'${eid}'},bubbles:true,composed:true}));window.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:'${eid}'}}))"` : '';
+    return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 12px;text-align:center${eid ? ';cursor:pointer' : ''}"${click}>
       <div style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px">${label}</div>
       <div style="font-size:1rem;font-weight:650;color:${vClr}">${value}</div></div>`;
   }
@@ -1544,31 +1549,31 @@ class ZeeSkyCard extends HTMLElement {
       ? `<span style="color:#ef4444">${err}</span>`
       : `<span style="color:#4ade80">No Errors</span>`;
     // Error full-width row (spans 2 columns)
-    const errorRow = `<div data-eid="${this.config.inv_error_entity || ''}" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 14px;text-align:center;margin-bottom:10px;cursor:pointer">
+    const errClick = this.config.inv_error_entity ? `onclick="const h=this.closest('[data-host]')._cardHost;h.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:'${this.config.inv_error_entity}'},bubbles:true,composed:true}));window.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:'${this.config.inv_error_entity}'}}))"` : '';
+    const errorRow = `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 14px;text-align:center;margin-bottom:10px${this.config.inv_error_entity ? ';cursor:pointer' : ''}" ${errClick}>
       <div style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px">Error</div>
       <div style="font-size:1rem;font-weight:650">${errorHtml}</div></div>`;
     const invMaxPwr = this.config.inverter_max_power || 6000;
     const dodOn  = this.config.inv_dod_on_grid ? v(this.config.inv_dod_on_grid) : null;
     const dodOff = this.config.inv_dod_off_grid ? v(this.config.inv_dod_off_grid) : null;
     const exLim  = this.config.inv_export_limit ? v(this.config.inv_export_limit) : null;
-    // Slider matching zee-home-card design: [label] [bar+thumb] [value] + HA service call
+    // Slider matching zee-home-card design: [icon] [label] [bar+thumb] [value] + service call
     const sl = (icon, label, val, unit, min, max, step, entityId) => {
       const vv = val !== null ? val : 0;
       const tt = val !== null ? val + ' ' + unit : '-- ' + unit;
       const pct = val !== null ? Math.max(0, Math.min(100, ((val - min) / (max - min || 1)) * 100)) : 0;
       const svc = entityId ? `host._hass.callService('number','set_value',{entity_id:'${entityId}',value:parseFloat(this.value)});` : '';
-      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px;margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;flex-shrink:0;min-width:64px">${icon} ${label}</span>
-          <div style="flex:1;position:relative;height:24px;display:flex;align-items:center">
-            <div style="width:100%;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;position:relative">
-              <div style="width:${pct}%;height:100%;background:#f39c4b;border-radius:2px;transition:width .1s" class="sl-fill"></div>
-              <div style="position:absolute;top:50%;left:${pct}%;width:14px;height:14px;background:#fff;border:2px solid #f39c4b;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.3);transition:left .1s" class="sl-thumb"></div>
-            </div>
+      return `<div style="position:relative;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px;margin-bottom:8px">
+        <span style="flex-shrink:0;font-size:.85rem;line-height:1">${icon}</span>
+        <span style="flex-shrink:0;font-size:.72rem;color:rgba(200,215,235,0.7);max-width:38%">${label}</span>
+        <div style="flex:1;display:flex;align-items:center;gap:6px">
+          <div style="flex:1;position:relative;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;cursor:pointer">
+            <div style="width:${pct}%;height:100%;background:#f39c4b;border-radius:2px;transition:width .1s" class="sl-fill"></div>
+            <div style="position:absolute;top:50%;left:${pct}%;width:14px;height:14px;background:#fff;border:2px solid #f39c4b;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.3);transition:left .1s" class="sl-thumb"></div>
           </div>
-          <span style="font-size:.8rem;font-weight:600;color:#e0e8f0;flex-shrink:0;min-width:48px;text-align:right" class="sl-val">${tt}</span>
+          <span style="font-size:.78rem;font-weight:600;color:#e0e8f0;flex-shrink:0;min-width:44px;text-align:right" class="sl-val">${tt}</span>
         </div>
-        <input type="range" min="${min}" max="${max}" step="${step}" value="${vv}" style="width:100%;height:24px;margin-top:-20px;opacity:0;cursor:pointer;position:relative;z-index:1" oninput="
+        <input type="range" min="${min}" max="${max}" step="${step}" value="${vv}" style="position:absolute;left:0;right:0;top:0;bottom:0;width:100%;height:100%;opacity:0;cursor:pointer" oninput="
           const p=((this.value-${min})/(${max}-${min}||1))*100;
           const c=this.parentElement;
           const host=this.closest('[data-host]')._cardHost;
@@ -3479,6 +3484,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.15',
+  version: '2.6.16',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
