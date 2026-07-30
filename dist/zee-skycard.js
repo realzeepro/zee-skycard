@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.9
+// zee-skycard.js – Sky Edition v2.6.10
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -632,6 +632,7 @@ class ZeeSkyCardEditor extends HTMLElement {
       picker('today_batt_chg', 'Today Batt Charge'),
       picker('grid_import_today', 'Grid Import Today (kWh)', true),
       picker('grid_export_today', 'Grid Export Today (kWh)', true),
+      picker('today_load', 'Today Load (kWh)', true),
     ]));
 
     const showCamera  = !!(cfg._show_camera);
@@ -2075,42 +2076,31 @@ class ZeeSkyCard extends HTMLElement {
       <div class="pvf">
         <div class="pvi">
           <span class="ico">☀️</span>
-          <span class="lbl">${this.config.label_today_pv||'TODAY PV'}</span>
-          <span class="val yw" id="invTodayPv">-- kWh</span>
-          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px;margin-top:1px">
-            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">TOTAL PV</span>
-            <span id="invTotalPv" style="font-size:.72rem;font-weight:650;color:#f4d03f">-- W</span>
-          </div>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Today PV</span>
+          <span id="invTodayPv" style="font-size:.72rem;font-weight:650;color:#f4d03f">-- kWh</span>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total PV</span>
+          <span id="invTotalPv" style="font-size:.72rem;font-weight:650;color:#f4d03f">-- W</span>
         </div>
         <div class="pvi">
           <span class="ico">🔋</span>
-          <span class="lbl">CHG / DIS</span>
-          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px">
-            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">CHARGE</span>
-            <span id="invTodayBattChg" style="font-size:.72rem;font-weight:650;color:#3fb950">-- kWh</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px">
-            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">DISCHARGE</span>
-            <span id="invTodayBattDis" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
-          </div>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Today Charge</span>
+          <span id="invTodayBattChg" style="font-size:.72rem;font-weight:650;color:#3fb950">-- kWh</span>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total Discharge</span>
+          <span id="invTodayBattDis" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
         </div>
         <div class="pvi">
           <span class="ico">🔌</span>
-          <span class="lbl">${this.config.label_grid_import||'GRID IMPORT'}</span>
-          <span class="val" id="invGridImport" style="color:#f39c4b">-- kWh</span>
-          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px;margin-top:1px">
-            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">EXPORT</span>
-            <span id="invGridExport" style="font-size:.72rem;font-weight:650;color:#4ade80">-- kWh</span>
-          </div>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Grid Import</span>
+          <span id="invGridImport" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Grid Export</span>
+          <span id="invGridExport" style="font-size:.72rem;font-weight:650;color:#4ade80">-- kWh</span>
         </div>
         <div class="pvi">
           <span class="ico">⬆️</span>
-          <span class="lbl">${this.config.label_grid_export||'TODAY LOAD'}</span>
-          <span class="val" id="invTodayLoad" style="color:#29b6f6">-- kWh</span>
-          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px;margin-top:1px">
-            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">TOTAL LOAD</span>
-            <span id="invConsump" style="font-size:.72rem;font-weight:650;color:#e0e8f0">-- W</span>
-          </div>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Today Load</span>
+          <span id="invTodayLoad" style="font-size:.72rem;font-weight:650;color:#29b6f6">-- kWh</span>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total Load</span>
+          <span id="invConsump" style="font-size:.72rem;font-weight:650;color:#e0e8f0">-- W</span>
         </div>
       </div>
 
@@ -3411,6 +3401,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.9',
+  version: '2.6.10',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
