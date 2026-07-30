@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.6
+// zee-skycard.js – Sky Edition v2.6.7
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -160,6 +160,11 @@ class ZeeSkyCardEditor extends HTMLElement {
 
     const shell = document.createElement('div');
     shell.innerHTML = style;
+    // Title bar
+    const titleBar = document.createElement('div');
+    titleBar.style.cssText = 'font-size:1.05rem;font-weight:700;padding:8px 2px 14px;color:var(--primary-text-color);display:flex;align-items:center;gap:8px;letter-spacing:.3px';
+    titleBar.innerHTML = '☰ Zee Skycard Configuration';
+    shell.appendChild(titleBar);
 
     const makeSection = (sectionId, icon, title, rows, opts = {}) => {
       if (this._sectionOpen[sectionId] === undefined) this._sectionOpen[sectionId] = (sectionId === 'general');
@@ -649,19 +654,59 @@ class ZeeSkyCardEditor extends HTMLElement {
         picker('camera_4_entity', 'Camera 4 Entity', true),
       ], { toggleKey: '_show_camera', toggleOn: showCamera, hidden: !showCamera }),
       divider(),
-      makeSection('mon_system', '🖥️', 'System / Inverter / Battery Info', [
-        textField('clim_ac_name', 'AC / Climate Name', 'AC'),
+      makeSection('mon_sys_inv_bat', '🖥️', 'System / Inverter / Battery', [
+        makeSection('mon_system', '🖥️', 'System', [
+          picker('sys_cpu_entity', 'CPU Usage', true),
+          picker('sys_mem_entity', 'Memory Usage', true),
+          picker('sys_disk_entity', 'Disk Usage', true),
+          picker('sys_uptime_entity', 'Uptime', true),
+          divider(),
+          picker('sys_core1_temp', 'Core 1 Temp', true),
+          picker('sys_core2_temp', 'Core 2 Temp', true),
+          picker('sys_package_temp', 'Package Temp', true),
+          divider(),
+          picker('sys_eth0_rx', 'Eth0 RX', true),
+          picker('sys_eth0_tx', 'Eth0 TX', true),
+          picker('sys_wlan0_rx', 'Wlan0 RX', true),
+          picker('sys_wlan0_tx', 'Wlan0 TX', true),
+        ], {}),
+        divider(),
+        makeSection('mon_inverter', '⚡', 'Inverter', [
+          picker('inv_temp', 'Inverter Temp'),
+          picker('inv_rad_temp', 'Rad Temp', true),
+          picker('inv_error_entity', 'Error Entity', true),
+          picker('inv_mode_entity', 'Mode Entity', true),
+          divider(),
+          picker('inv_dod_on_grid', 'DoD On-grid', true),
+          picker('inv_dod_off_grid', 'DoD Off-grid', true),
+          picker('inv_export_limit', 'Export Limit', true),
+        ], {}),
+        divider(),
+        makeSection('mon_battery', '🔋', 'Battery', [
+          picker('bat_soh', 'SOH', true),
+          picker('bat_index', 'Index', true),
+          picker('bat_bms_version', 'BMS Version', true),
+          picker('bat_cell_max_temp', 'Cell Max Temp', true),
+          picker('bat_cell_min_temp', 'Cell Min Temp', true),
+        ], {}),
       ], { toggleKey: '_show_system', toggleOn: showSystem, hidden: !showSystem }),
       divider(),
       makeSection('mon_plugs', '🔌', 'Smart Plugs', [
         textField('smart_plug_1_name', 'Plug 1 Name', 'Plug 1'),
         picker('smart_plug_1_entity', 'Plug 1 Entity', true),
+        picker('smart_plug_1_power', 'Plug 1 Power', true),
+        picker('smart_plug_1_voltage', 'Plug 1 Voltage', true),
+        picker('smart_plug_1_current', 'Plug 1 Current', true),
         divider(),
         textField('smart_plug_2_name', 'Plug 2 Name', 'Plug 2'),
         picker('smart_plug_2_entity', 'Plug 2 Entity', true),
+        picker('smart_plug_2_power', 'Plug 2 Power', true),
+        picker('smart_plug_2_voltage', 'Plug 2 Voltage', true),
+        picker('smart_plug_2_current', 'Plug 2 Current', true),
       ], { toggleKey: '_show_smartplugs', toggleOn: showPlugs, hidden: !showPlugs }),
       divider(),
       makeSection('mon_climate', '🌡️', 'Climate', [
+        textField('clim_ac_name', 'AC / Climate Name', 'AC'),
         picker('climate_entity', 'Climate Entity', true),
       ], { toggleKey: '_show_climate', toggleOn: showClimate, hidden: !showClimate }),
     ]));
@@ -1038,8 +1083,8 @@ class ZeeSkyCard extends HTMLElement {
       camera_4_entity: '', camera_4_name: 'Camera 4',
       _show_system: false,
       _show_smartplugs: false,
-      smart_plug_1_entity: '', smart_plug_1_name: 'Plug 1', smart_plug_1_power: '', smart_plug_1_voltage: '',
-      smart_plug_2_entity: '', smart_plug_2_name: 'Plug 2', smart_plug_2_power: '', smart_plug_2_voltage: '',
+      smart_plug_1_entity: '', smart_plug_1_name: 'Plug 1', smart_plug_1_power: '', smart_plug_1_voltage: '', smart_plug_1_current: '',
+      smart_plug_2_entity: '', smart_plug_2_name: 'Plug 2', smart_plug_2_power: '', smart_plug_2_voltage: '', smart_plug_2_current: '',
       _show_climate: false,
       climate_entity: '', clim_ac_name: 'AC',
       // ── System monitoring entities ──
@@ -1517,12 +1562,14 @@ class ZeeSkyCard extends HTMLElement {
       const isOn = state && (state.state === 'on' || state.state === 'true');
       const power = this._val(this.config[`smart_plug_${i}_power`]);
       const volt = this._val(this.config[`smart_plug_${i}_voltage`]);
-      plugs.push({ name, eid, isOn, power, volt });
+      const current = this._val(this.config[`smart_plug_${i}_current`]);
+      plugs.push({ name, eid, isOn, power, volt, current });
     }
     const rows = plugs.map((p) => {
       const chk = p.isOn ? 'checked' : '';
       const pwrV = p.power !== null ? p.power.toFixed(0) + ' W' : '-- W';
       const vltV = p.volt !== null ? p.volt.toFixed(1) + ' V' : '-- V';
+      const curV = p.current !== null ? p.current.toFixed(2) + ' A' : '-- A';
       return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:.85rem;font-weight:600;color:#e0e8f0">${p.name}</span>
@@ -1539,6 +1586,7 @@ class ZeeSkyCard extends HTMLElement {
         <div style="display:flex;gap:16px;font-size:.7rem;color:rgba(200,215,235,0.6)">
           <span>⚡ ${pwrV}</span>
           <span>⚡ ${vltV}</span>
+          <span>⚡ ${curV}</span>
         </div>
       </div>`;
     }).join('');
@@ -3343,6 +3391,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.6',
+  version: '2.6.7',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
