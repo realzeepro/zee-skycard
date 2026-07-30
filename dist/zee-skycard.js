@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.13
+// zee-skycard.js – Sky Edition v2.6.14
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1427,7 +1427,10 @@ class ZeeSkyCard extends HTMLElement {
       const item = e.target.closest('[data-eid]');
       if (item) {
         const eid = item.getAttribute('data-eid');
-        if (eid) window.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: eid } }));
+        if (eid) {
+          window.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: eid } }));
+          this.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: eid }, bubbles: true, composed: true }));
+        }
       }
     });
     // Inject keyframe once
@@ -1530,43 +1533,61 @@ class ZeeSkyCard extends HTMLElement {
     const errorHtml = err && err !== '0' && err !== 'none' && err !== 'ok' && err !== 'normal'
       ? `<span style="color:#ef4444">${err}</span>`
       : `<span style="color:#4ade80">No Errors</span>`;
+    // Error full-width row (spans 2 columns)
+    const errorRow = `<div data-eid="${this.config.inv_error_entity || ''}" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 14px;text-align:center;margin-bottom:10px;cursor:pointer">
+      <div style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px">Error</div>
+      <div style="font-size:1rem;font-weight:650">${errorHtml}</div></div>`;
     const invMaxPwr = this.config.inverter_max_power || 6000;
-    // Sliders
     const dodOn  = this.config.inv_dod_on_grid ? v(this.config.inv_dod_on_grid) : null;
     const dodOff = this.config.inv_dod_off_grid ? v(this.config.inv_dod_off_grid) : null;
     const exLim  = this.config.inv_export_limit ? v(this.config.inv_export_limit) : null;
-    const sl = (label, val, unit, min, max, step) => {
+    // Slider matching zee-home-card design: [label] [bar+thumb] [value]
+    const sl = (icon, label, val, unit, min, max, step) => {
       const vv = val !== null ? val : 0;
       const tt = val !== null ? val + ' ' + unit : '-- ' + unit;
-      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1.2px;text-transform:uppercase">${label}</span><span style="font-size:.85rem;font-weight:650;color:#e0e8f0">${tt}</span></div>
-        <input type="range" min="${min}" max="${max}" step="${step}" value="${vv}" style="width:100%;accent-color:#f39c4b;height:4px;cursor:pointer" oninput="this.previousElementSibling.nextElementSibling.textContent=this.value+' ${unit}'">
-        <div style="display:flex;justify-content:space-between;font-size:.55rem;color:rgba(200,215,235,0.35);margin-top:2px"><span>${min} ${unit}</span><span>${max} ${unit}</span></div>
-      </div>`;
+      const pct = val !== null ? Math.max(0, Math.min(100, ((val - min) / (max - min || 1)) * 100)) : 0;
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;flex-shrink:0;min-width:64px">${icon} ${label}</span>
+          <div style="flex:1;position:relative;height:24px;display:flex;align-items:center">
+            <div style="width:100%;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;position:relative">
+              <div style="width:${pct}%;height:100%;background:#f39c4b;border-radius:2px;transition:width .1s" class="sl-fill"></div>
+              <div style="position:absolute;top:50%;left:${pct}%;width:14px;height:14px;background:#fff;border:2px solid #f39c4b;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.3);transition:left .1s" class="sl-thumb"></div>
+            </div>
+          </div>
+          <span style="font-size:.8rem;font-weight:600;color:#e0e8f0;flex-shrink:0;min-width:48px;text-align:right" class="sl-val">${tt}</span>
+        </div>
+        <input type="range" min="${min}" max="${max}" step="${step}" value="${vv}" style="width:100%;height:24px;margin-top:-20px;opacity:0;cursor:pointer;position:relative;z-index:1" oninput="
+          const p=((this.value-${min})/(${max}-${min}||1))*100;
+          const c=this.parentElement;
+          c.querySelector('.sl-fill').style.width=p+'%';
+          c.querySelector('.sl-thumb').style.left=p+'%';
+          c.querySelector('.sl-val').textContent=this.value+' ${unit}'"></div>`;
     };
     const statsItems = [
       this._popupEntityItem('Inverter Temp', invT !== null ? invT + ' °C' : '--', this.config.inv_temp, '#e0e8f0'),
       this._popupEntityItem('Rad Temp', radT !== null ? radT + ' °C' : '--', this.config.inv_rad_temp, '#e0e8f0'),
       this._popupEntityItem('Total Hours', totH !== null ? totH.toFixed(1) + ' h' : '--', this.config.inv_total_hours, '#3fb950'),
-      this._popupItem('Error', errorHtml, ''),
       this._popupEntityItem('Mode', mode !== null ? mode.charAt(0).toUpperCase() + mode.slice(1) : '--', this.config.inv_mode_entity, '#58a6ff'),
     ];
     let controlsHtml = '';
     if (dodOn !== null || dodOff !== null || exLim !== null) {
       controlsHtml = `<div style="margin-top:14px">` +
         this._popupTitle('Controls') +
-        (dodOn !== null ? sl('DoD On-grid', dodOn, '%', 0, 100, 1) : '') +
-        (dodOff !== null ? sl('DoD Off-grid', dodOff, '%', 0, 100, 1) : '') +
-        (exLim !== null ? sl('Export Limit', exLim, 'W', 0, invMaxPwr, 100) : '') +
+        (dodOn !== null ? sl('🪫', 'DoD On-grid', dodOn, '%', 0, 100, 1) : '') +
+        (dodOff !== null ? sl('🪫', 'DoD Off-grid', dodOff, '%', 0, 100, 1) : '') +
+        (exLim !== null ? sl('📤', 'Export Limit', exLim, 'W', 0, invMaxPwr, 100) : '') +
         `</div>`;
     }
     this._popup(this._popupClose() + this._popupTitle('⚡ Inverter') +
+      errorRow +
       `<div style="margin-bottom:6px">${this._popupGrid(statsItems)}</div>${controlsHtml}`);
   }
 
   _openBatteryPopup() {
     const v = (e) => { const r = this._val(e); return r !== null && !isNaN(r) ? r : null; };
     const s = (e) => { const r = this._strVal(e); return r || null; };
+    const status = s(this.config.bat_status);
     const soc   = v(this.config.battery_soc);
     const volt  = v(this.config.battery_voltage);
     const pwr   = v(this.config.battery_power);
@@ -1578,12 +1599,9 @@ class ZeeSkyCard extends HTMLElement {
     const cellMaxT = v(this.config.bat_cell_max_temp);
     const cellMinT = v(this.config.bat_cell_min_temp);
     const bmsT   = v(this.config.battery_mos);
-    const status = s(this.config.bat_status);
-    const socBar = soc !== null
-      ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="width:38px;font-size:.72rem;font-weight:650;color:${this._socColor(soc)}">${soc}%</span><div style="flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;width:${soc}%;background:${this._socColor(soc)};transition:width .3s ease"></div></div></div>`
-      : '';
     this._popup(this._popupClose() + this._popupTitle('🔋 Battery') +
-      socBar + this._popupGrid([
+      this._popupGrid([
+      this._popupEntityItem('Battery Status', status !== null ? status.charAt(0).toUpperCase() + status.slice(1) : '--', this.config.bat_status, status !== null ? '#4ade80' : '#e0e8f0'),
       this._popupEntityItem('SOC', soc !== null ? soc + ' %' : '--', this.config.battery_soc, '#4ade80'),
       this._popupEntityItem('Voltage', volt !== null ? volt.toFixed(2) + ' V' : '--', this.config.battery_voltage, '#4ade80'),
       this._popupEntityItem('Power', pwr !== null ? pwr.toFixed(0) + ' W' : '--', this.config.battery_power, '#e0e8f0'),
@@ -1592,7 +1610,6 @@ class ZeeSkyCard extends HTMLElement {
       this._popupEntityItem('SOH', soh !== null ? soh + ' %' : '--', this.config.bat_soh, '#3fb950'),
       this._popupEntityItem('Index', idx !== null ? idx : '--', this.config.bat_index, '#58a6ff'),
       this._popupItem('BMS Version', bmsVer !== null ? bmsVer : '--', '#ce93d8'),
-      this._popupItem('Battery Status', status !== null ? status.charAt(0).toUpperCase() + status.slice(1) : '--', status !== null ? '#4ade80' : '#e0e8f0'),
       this._popupEntityItem('Cell Max Temp', cellMaxT !== null ? cellMaxT.toFixed(1) + ' °C' : '--', this.config.bat_cell_max_temp, cellMaxT !== null ? this._tempColor(cellMaxT) : '#e0e8f0'),
       this._popupEntityItem('Cell Min Temp', cellMinT !== null ? cellMinT.toFixed(1) + ' °C' : '--', this.config.bat_cell_min_temp, cellMinT !== null ? this._tempColor(cellMinT) : '#e0e8f0'),
       this._popupEntityItem('BMS Temp', bmsT !== null ? bmsT.toFixed(1) + ' °C' : '--', this.config.battery_mos, bmsT !== null ? this._tempColor(bmsT) : '#e0e8f0'),
@@ -3449,6 +3466,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.13',
+  version: '2.6.14',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
