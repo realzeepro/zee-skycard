@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.0
+// zee-skycard.js – Sky Edition v2.6.1
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1318,6 +1318,49 @@ class ZeeSkyCard extends HTMLElement {
 
   _popupOverlayEl(innerHtml) {
     this._closePopup();
+    // Inject popup styles into document head once
+    if (!document.getElementById('kfc-popup-style')) {
+      const s = document.createElement('style');
+      s.id = 'kfc-popup-style';
+      s.textContent = `@keyframes kfcFadeIn{from{opacity:0}to{opacity:1}}
+.kfc-popup-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:kfcFadeIn .18s ease;font-family:"Segoe UI",system-ui,-apple-system,sans-serif}
+.kfc-popup-box{background:rgba(18,28,48,0.94);border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:22px 24px;max-width:620px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,0.6);position:relative;animation:kfcFadeIn .22s ease}
+.kfc-popup-close{position:absolute;top:12px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:1.1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;line-height:1}
+.kfc-popup-close:hover{background:rgba(255,255,255,0.15)}
+.kfc-popup-title{font-size:.82rem;font-weight:650;letter-spacing:2px;text-transform:uppercase;color:#f39c4b;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.kfc-popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kfc-popup-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px;text-align:center}
+.kfc-popup-item .lbl{font-size:.6rem;color:rgba(200,215,235,0.55);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px}
+.kfc-popup-item .val{font-size:1rem;font-weight:650;color:#e0e8f0}
+.kfc-popup-item .val.green{color:#4ade80}
+.kfc-popup-item .val.orange{color:#f39c4b}
+.kfc-popup-item .val.red{color:#ef4444}
+.kfc-popup-item .val.blue{color:#58a6ff}
+.kfc-popup-cam-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kfc-popup-cam-cell{aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);position:relative}
+.kfc-popup-cam-cell img{width:100%;height:100%;object-fit:contain;display:block}
+.kfc-popup-cam-cell .cam-name{position:absolute;bottom:0;left:0;right:0;font-size:.6rem;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.55);padding:3px 8px;text-align:center;letter-spacing:.5px}
+.kfc-popup-batt-bar{display:flex;align-items:center;gap:8px;margin:4px 0}
+.kfc-popup-batt-bar .track{flex:1;height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden}
+.kfc-popup-batt-bar .fill{height:100%;border-radius:5px;transition:width .3s ease}
+.kfc-popup-stepper{display:flex;align-items:center;gap:4px}
+.kfc-popup-stepper button{width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.kfc-popup-stepper button:hover{background:rgba(255,255,255,0.15)}
+.kfc-popup-stepper span{min-width:40px;text-align:center;font-size:1rem;font-weight:650;color:#e0e8f0}
+.kfc-popup-slider-wrap{padding:4px 0 8px}
+.kfc-popup-slider-wrap input[type=range]{width:100%;accent-color:#f39c4b;height:4px;cursor:pointer}
+.kfc-popup-slider-wrap .slider-labels{display:flex;justify-content:space-between;font-size:.58rem;color:rgba(200,215,235,0.45);margin-top:2px}
+.kfc-popup-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0}
+.kfc-popup-toggle{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;cursor:pointer}
+.kfc-popup-toggle input{opacity:0;width:0;height:0;position:absolute}
+.kfc-popup-toggle .track{position:absolute;inset:0;border-radius:10px;transition:background .2s;background:rgba(255,255,255,0.15)}
+.kfc-popup-toggle .knob{position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;left:2px}
+.kfc-popup-toggle.on .track{background:#03a9f4}
+.kfc-popup-toggle.on .knob{left:18px}
+.kfc-popup-chip{display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#c9d1d9}
+.kfc-popup-chip.on{background:var(--primary-color,#03a9f4);border-color:var(--primary-color,#03a9f4);color:#fff}`;
+      document.head.appendChild(s);
+    }
     const overlay = document.createElement('div');
     overlay.className = 'kfc-popup-overlay';
     overlay._cardHost = this;
@@ -1328,7 +1371,6 @@ class ZeeSkyCard extends HTMLElement {
     overlay.appendChild(box);
     document.body.appendChild(overlay);
     this._popupOverlay = overlay;
-    // Close button handler
     const closeBtn = box.querySelector('.kfc-popup-close');
     if (closeBtn) closeBtn.addEventListener('click', () => this._closePopup());
     return { overlay, box };
@@ -1500,7 +1542,7 @@ class ZeeSkyCard extends HTMLElement {
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px">
         ${modes.map(m => `<span class="kfc-popup-chip${hvacMode === m ? ' on' : ''}" onclick="
-          const o=this.closest('.kfc-popup-overlay').host||document.querySelector('zee-skycard');
+          const o=this.closest('.kfc-popup-overlay')._cardHost;
           if(o&&o._hass)o._hass.callService('climate','set_hvac_mode',{entity_id:'${eid}',hvac_mode:'${m}'});
           this.parentNode.querySelectorAll('.kfc-popup-chip').forEach(c=>c.classList.remove('on'));
           this.classList.add('on')">${m.replace('_',' ')}</span>`).join('')}
@@ -1508,7 +1550,7 @@ class ZeeSkyCard extends HTMLElement {
       ${fans.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px">
         <span style="font-size:.6rem;color:rgba(200,215,235,0.45);letter-spacing:1px;text-transform:uppercase;width:100%;text-align:center;margin-bottom:2px">Fan</span>
         ${fans.map(f => `<span class="kfc-popup-chip${fanMode === f ? ' on' : ''}" onclick="
-          const o=this.closest('.kfc-popup-overlay').host||document.querySelector('zee-skycard');
+          const o=this.closest('.kfc-popup-overlay')._cardHost;
           if(o&&o._hass)o._hass.callService('climate','set_fan_mode',{entity_id:'${eid}',fan_mode:'${f}'});
           this.parentNode.querySelectorAll('.kfc-popup-chip').forEach(c=>c.classList.remove('on'));
           this.classList.add('on')">${f}</span>`).join('')}
@@ -1516,14 +1558,14 @@ class ZeeSkyCard extends HTMLElement {
       ${swings.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
         <span style="font-size:.6rem;color:rgba(200,215,235,0.45);letter-spacing:1px;text-transform:uppercase;width:100%;text-align:center;margin-bottom:2px">Swing</span>
         ${swings.map(s => `<span class="kfc-popup-chip${swingMode === s ? ' on' : ''}" onclick="
-          const o=this.closest('.kfc-popup-overlay').host||document.querySelector('zee-skycard');
+          const o=this.closest('.kfc-popup-overlay')._cardHost;
           if(o&&o._hass)o._hass.callService('climate','set_swing_mode',{entity_id:'${eid}',swing_mode:'${s}'});
           this.parentNode.querySelectorAll('.kfc-popup-chip').forEach(c=>c.classList.remove('on'));
           this.classList.add('on')">${s}</span>`).join('')}
       </div>` : ''}
       <div style="margin-top:12px;display:flex;justify-content:center">
         <span class="kfc-popup-chip${isOn ? ' on' : ''}" onclick="
-          const o=this.closest('.kfc-popup-overlay').host||document.querySelector('zee-skycard');
+          const o=this.closest('.kfc-popup-overlay')._cardHost;
           if(o&&o._hass)o._hass.callService('climate','toggle',{entity_id:'${eid}'});
           this.classList.toggle('on')">${isOn ? '✓ ON' : 'OFF'}</span>
       </div>`);
@@ -1610,7 +1652,6 @@ class ZeeSkyCard extends HTMLElement {
       @keyframes kfcLightning{0%,85%,88%,92%,100%{opacity:0}86%,90%{opacity:.8}}
       @keyframes kfcFogDrift{0%{transform:translateX(-6%)}100%{transform:translateX(6%)}}
       @keyframes kfcSunPulse{0%,100%{opacity:.16;transform:translate(-50%,-50%) scale(1)}50%{opacity:.28;transform:translate(-50%,-50%) scale(1.07)}}
-      @keyframes kfcFadeIn{from{opacity:0}to{opacity:1}}
       .kfc-shell{position:relative;overflow:hidden;border-radius:14px;padding:10px 8px;
         box-shadow:0 4px 28px rgba(0,0,0,.65);width:100%;box-sizing:border-box;
         border:1px solid rgba(255,255,255,.06);background:rgb(21,47,85);transition:background 1.2s ease;
@@ -1642,44 +1683,6 @@ class ZeeSkyCard extends HTMLElement {
       .kfc-pwr-fill-area{position:absolute;left:0;top:0;bottom:0;right:0;overflow:hidden;border-radius:2px}
       #pwrBar{position:absolute;top:0;left:0;bottom:0;width:0%;height:100%;border-radius:2px;transition:width .4s ease,background .4s ease}
       .kfc-bar-pct{position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:.58rem;font-weight:650;color:#29b6f6;line-height:1;white-space:nowrap;z-index:2;pointer-events:none}
-      /* ── Popup overlay styles ── */
-      .kfc-popup-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);animation:kfcFadeIn .18s ease;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-      .kfc-popup-box{background:rgba(18,28,48,0.94);border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:22px 24px;max-width:620px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,0.6);position:relative;animation:kfcFadeIn .22s ease}
-      .kfc-popup-close{position:absolute;top:12px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:1.1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;line-height:1}
-      .kfc-popup-close:hover{background:rgba(255,255,255,0.15)}
-      .kfc-popup-title{font-size:.82rem;font-weight:650;letter-spacing:2px;text-transform:uppercase;color:#f39c4b;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-      .kfc-popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .kfc-popup-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px;text-align:center}
-      .kfc-popup-item .lbl{font-size:.6rem;color:rgba(200,215,235,0.55);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px}
-      .kfc-popup-item .val{font-size:1rem;font-weight:650;color:#e0e8f0}
-      .kfc-popup-item .val.green{color:#4ade80}
-      .kfc-popup-item .val.yellow{color:#f4d03f}
-      .kfc-popup-item .val.orange{color:#f39c4b}
-      .kfc-popup-item .val.red{color:#ef4444}
-      .kfc-popup-item .val.blue{color:#58a6ff}
-      .kfc-popup-chip{display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#c9d1d9}
-      .kfc-popup-chip.on{background:var(--primary-color,#03a9f4);border-color:var(--primary-color,#03a9f4);color:#fff}
-      .kfc-popup-toggle{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;cursor:pointer}
-      .kfc-popup-toggle input{opacity:0;width:0;height:0;position:absolute}
-      .kfc-popup-toggle .track{position:absolute;inset:0;border-radius:10px;transition:background .2s;background:rgba(255,255,255,0.15)}
-      .kfc-popup-toggle .knob{position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;left:2px}
-      .kfc-popup-toggle.on .track{background:#03a9f4}
-      .kfc-popup-toggle.on .knob{left:18px}
-      .kfc-popup-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0}
-      .kfc-popup-stepper{display:flex;align-items:center;gap:4px}
-      .kfc-popup-stepper button{width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
-      .kfc-popup-stepper button:hover{background:rgba(255,255,255,0.15)}
-      .kfc-popup-stepper span{min-width:40px;text-align:center;font-size:1rem;font-weight:650;color:#e0e8f0}
-      .kfc-popup-slider-wrap{padding:4px 0 8px}
-      .kfc-popup-slider-wrap input[type=range]{width:100%;accent-color:#f39c4b;height:4px;cursor:pointer}
-      .kfc-popup-slider-wrap .slider-labels{display:flex;justify-content:space-between;font-size:.58rem;color:rgba(200,215,235,0.45);margin-top:2px}
-      .kfc-popup-batt-bar{display:flex;align-items:center;gap:8px;margin:4px 0}
-      .kfc-popup-batt-bar .track{flex:1;height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden}
-      .kfc-popup-batt-bar .fill{height:100%;border-radius:5px;transition:width .3s ease}
-      .kfc-popup-cam-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .kfc-popup-cam-cell{aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);position:relative}
-      .kfc-popup-cam-cell img{width:100%;height:100%;object-fit:contain;display:block}
-      .kfc-popup-cam-cell .cam-name{position:absolute;bottom:0;left:0;right:0;font-size:.6rem;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.55);padding:3px 8px;text-align:center;letter-spacing:.5px}
     </style>
     <div class="kfc-shell" id="kfcShell">
       <div id="kfcSkyDiv" aria-hidden="true"></div>
@@ -3313,6 +3316,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.0',
+  version: '2.6.1',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
