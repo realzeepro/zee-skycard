@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.14
+// zee-skycard.js – Sky Edition v2.6.15
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -625,13 +625,16 @@ class ZeeSkyCardEditor extends HTMLElement {
       switchRow('_show_inv_banner', '📛 Show Inverter Banner', 'Shows the INV temp/load badge in the flow diagram'),
       divider(),
       picker('inv_temp',   'Inverter Temp'),
-      picker('consump',    'House Consumption / Total Load'),
-      picker('batt_dis',   'Battery Discharge Today', true),
+      picker('consump',    'House Consumption'),
       divider(),
-      picker('today_pv',       'Today PV Generation'),
       picker('today_batt_chg', 'Today Batt Charge'),
-      picker('grid_import_today', 'Grid Import Today (kWh)', true),
-      picker('grid_export_today', 'Grid Export Today (kWh)', true),
+      picker('today_batt_dis',   'Today Battery Discharge', true),
+      picker('today_pv',       'Today PV Generation'),
+      picker('total_pv',       'Total PV Generation'),
+      picker('today_load', 'Today Load (tile 4)', true),
+      picker('total_load_entity', 'Total Load (tile 4)', true),
+      picker('grid_import_total', 'Grid Import Total (kWh)', true),
+      picker('grid_export_total', 'Grid Export Total (kWh)', true),
     ]));
 
     const showCamera  = !!(cfg._show_camera);
@@ -680,8 +683,6 @@ class ZeeSkyCardEditor extends HTMLElement {
         picker('inv_dod_on_grid', 'DoD On-grid', true),
         picker('inv_dod_off_grid', 'DoD Off-grid', true),
         picker('inv_export_limit', 'Export Limit', true),
-        picker('today_load', 'Today Load (kWh)', true),
-        picker('total_load_entity', 'Total Load Entity (tile 4)', true),
       ], { toggleKey: '_show_system', toggleOn: showSystem, hidden: !showSystem }),
       divider(),
       makeSection('mon_battery_popup', '🔋', 'Battery Popup', [
@@ -1102,6 +1103,9 @@ class ZeeSkyCard extends HTMLElement {
       sys_wlan0_rx: '',
       sys_wlan0_tx: '',
       total_load_entity: '',
+      total_pv: '',
+      grid_import_total: '',
+      grid_export_total: '',
       // ── Inverter monitoring entities ──
       inv_rad_temp: '',
       inv_total_hours: '',
@@ -1202,14 +1206,24 @@ class ZeeSkyCard extends HTMLElement {
     hr = hr % 12 || 12;
     return 'Till ' + day + ' ' + hr + ':' + target.getMinutes().toString().padStart(2,'0') + ' ' + ampm;
   }
-  _fmtUptime(seconds) {
-    if (!seconds || !isFinite(seconds) || seconds <= 0) return '--';
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
+  _fmtUptime(raw) {
+    if (!raw) return '--';
+    let ms = NaN;
+    const s = String(raw).trim();
+    if (/^\d{10,13}$/.test(s)) {
+      ms = Number(s) * (s.length <= 10 ? 1000 : 1);
+    } else {
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) ms = d.getTime();
+    }
+    if (isNaN(ms)) return s;
+    const sec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+    const days = Math.floor(sec / 86400);
+    const hrs = Math.floor((sec % 86400) / 3600);
+    const mins = Math.floor((sec % 3600) / 60);
     let r = '';
     if (days > 0) r += days + ' Day' + (days !== 1 ? 's' : '') + ' ';
-    if (hours > 0) r += hours + ' Hour' + (hours !== 1 ? 's' : '') + ' ';
+    if (hrs > 0) r += hrs + ' Hour' + (hrs !== 1 ? 's' : '') + ' ';
     if (days === 0 && mins > 0) r += mins + ' Minute' + (mins !== 1 ? 's' : '');
     if (!r) r = 'Less than a minute';
     return r.trim();
@@ -1493,11 +1507,7 @@ class ZeeSkyCard extends HTMLElement {
     const mem   = v(this.config.sys_mem_entity);
     const disk  = v(this.config.sys_disk_entity);
     const upState = this._hass?.states?.[this.config.sys_uptime_entity]?.state;
-    let uptime = '--';
-    if (upState && upState !== 'unavailable' && upState !== 'unknown') {
-      const upNum = parseFloat(upState);
-      uptime = !isNaN(upNum) ? this._fmtUptime(upNum) : upState;
-    }
+    const uptime = upState && upState !== 'unavailable' && upState !== 'unknown' ? this._fmtUptime(upState) : '--';
     const c1    = v(this.config.sys_core1_temp);
     const c2    = v(this.config.sys_core2_temp);
     const pkg   = v(this.config.sys_package_temp);
@@ -1541,11 +1551,12 @@ class ZeeSkyCard extends HTMLElement {
     const dodOn  = this.config.inv_dod_on_grid ? v(this.config.inv_dod_on_grid) : null;
     const dodOff = this.config.inv_dod_off_grid ? v(this.config.inv_dod_off_grid) : null;
     const exLim  = this.config.inv_export_limit ? v(this.config.inv_export_limit) : null;
-    // Slider matching zee-home-card design: [label] [bar+thumb] [value]
-    const sl = (icon, label, val, unit, min, max, step) => {
+    // Slider matching zee-home-card design: [label] [bar+thumb] [value] + HA service call
+    const sl = (icon, label, val, unit, min, max, step, entityId) => {
       const vv = val !== null ? val : 0;
       const tt = val !== null ? val + ' ' + unit : '-- ' + unit;
       const pct = val !== null ? Math.max(0, Math.min(100, ((val - min) / (max - min || 1)) * 100)) : 0;
+      const svc = entityId ? `host._hass.callService('number','set_value',{entity_id:'${entityId}',value:parseFloat(this.value)});` : '';
       return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;flex-shrink:0;min-width:64px">${icon} ${label}</span>
@@ -1560,9 +1571,11 @@ class ZeeSkyCard extends HTMLElement {
         <input type="range" min="${min}" max="${max}" step="${step}" value="${vv}" style="width:100%;height:24px;margin-top:-20px;opacity:0;cursor:pointer;position:relative;z-index:1" oninput="
           const p=((this.value-${min})/(${max}-${min}||1))*100;
           const c=this.parentElement;
+          const host=this.closest('[data-host]')._cardHost;
           c.querySelector('.sl-fill').style.width=p+'%';
           c.querySelector('.sl-thumb').style.left=p+'%';
-          c.querySelector('.sl-val').textContent=this.value+' ${unit}'"></div>`;
+          c.querySelector('.sl-val').textContent=this.value+' ${unit}';
+          ${svc}"></div>`;
     };
     const statsItems = [
       this._popupEntityItem('Inverter Temp', invT !== null ? invT + ' °C' : '--', this.config.inv_temp, '#e0e8f0'),
@@ -1574,9 +1587,9 @@ class ZeeSkyCard extends HTMLElement {
     if (dodOn !== null || dodOff !== null || exLim !== null) {
       controlsHtml = `<div style="margin-top:14px">` +
         this._popupTitle('Controls') +
-        (dodOn !== null ? sl('🪫', 'DoD On-grid', dodOn, '%', 0, 100, 1) : '') +
-        (dodOff !== null ? sl('🪫', 'DoD Off-grid', dodOff, '%', 0, 100, 1) : '') +
-        (exLim !== null ? sl('📤', 'Export Limit', exLim, 'W', 0, invMaxPwr, 100) : '') +
+        (dodOn !== null ? sl('🪫', 'DoD On-grid', dodOn, '%', 0, 100, 1, this.config.inv_dod_on_grid) : '') +
+        (dodOff !== null ? sl('🪫', 'DoD Off-grid', dodOff, '%', 0, 100, 1, this.config.inv_dod_off_grid) : '') +
+        (exLim !== null ? sl('📤', 'Export Limit', exLim, 'W', 0, invMaxPwr, 100, this.config.inv_export_limit) : '') +
         `</div>`;
     }
     this._popup(this._popupClose() + this._popupTitle('⚡ Inverter') +
@@ -3466,6 +3479,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.14',
+  version: '2.6.15',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
