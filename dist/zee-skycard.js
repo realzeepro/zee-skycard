@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.8
+// zee-skycard.js – Sky Edition v2.6.9
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -654,41 +654,39 @@ class ZeeSkyCardEditor extends HTMLElement {
         picker('camera_4_entity', 'Camera 4 Entity', true),
       ], { toggleKey: '_show_camera', toggleOn: showCamera, hidden: !showCamera }),
       divider(),
-      makeSection('mon_sys_popups', '🖥️', 'System Popups', [
-        makeSection('mon_system_popup', '🖥️', 'System Popup', [
-          picker('sys_cpu_entity', 'CPU Usage', true),
-          picker('sys_mem_entity', 'Memory Usage', true),
-          picker('sys_disk_entity', 'Disk Usage', true),
-          picker('sys_uptime_entity', 'Uptime', true),
-          divider(),
-          picker('sys_core1_temp', 'Core 1 Temp', true),
-          picker('sys_core2_temp', 'Core 2 Temp', true),
-          picker('sys_package_temp', 'Package Temp', true),
-          divider(),
-          picker('sys_eth0_rx', 'Eth0 RX', true),
-          picker('sys_eth0_tx', 'Eth0 TX', true),
-          picker('sys_wlan0_rx', 'Wlan0 RX', true),
-          picker('sys_wlan0_tx', 'Wlan0 TX', true),
-        ], {}),
+      makeSection('mon_system_popup', '🖥️', 'System Popup', [
+        picker('sys_cpu_entity', 'CPU Usage', true),
+        picker('sys_mem_entity', 'Memory Usage', true),
+        picker('sys_disk_entity', 'Disk Usage', true),
+        picker('sys_uptime_entity', 'Uptime', true),
         divider(),
-        makeSection('mon_inverter_popup', '⚡', 'Inverter Popup', [
-          picker('inv_temp', 'Inverter Temp'),
-          picker('inv_rad_temp', 'Rad Temp', true),
-          picker('inv_error_entity', 'Error Entity', true),
-          picker('inv_mode_entity', 'Mode Entity', true),
-          divider(),
-          picker('inv_dod_on_grid', 'DoD On-grid', true),
-          picker('inv_dod_off_grid', 'DoD Off-grid', true),
-          picker('inv_export_limit', 'Export Limit', true),
-        ], {}),
+        picker('sys_core1_temp', 'Core 1 Temp', true),
+        picker('sys_core2_temp', 'Core 2 Temp', true),
+        picker('sys_package_temp', 'Package Temp', true),
         divider(),
-        makeSection('mon_battery_popup', '🔋', 'Battery Popup', [
-          picker('bat_soh', 'SOH', true),
-          picker('bat_index', 'Index', true),
-          picker('bat_bms_version', 'BMS Version', true),
-          picker('bat_cell_max_temp', 'Cell Max Temp', true),
-          picker('bat_cell_min_temp', 'Cell Min Temp', true),
-        ], {}),
+        picker('sys_eth0_rx', 'Eth0 RX', true),
+        picker('sys_eth0_tx', 'Eth0 TX', true),
+        picker('sys_wlan0_rx', 'Wlan0 RX', true),
+        picker('sys_wlan0_tx', 'Wlan0 TX', true),
+      ], { toggleKey: '_show_system', toggleOn: showSystem, hidden: !showSystem }),
+      divider(),
+      makeSection('mon_inverter_popup', '⚡', 'Inverter Popup', [
+        picker('inv_temp', 'Inverter Temp'),
+        picker('inv_rad_temp', 'Rad Temp', true),
+        picker('inv_error_entity', 'Error Entity', true),
+        picker('inv_mode_entity', 'Mode Entity', true),
+        divider(),
+        picker('inv_dod_on_grid', 'DoD On-grid', true),
+        picker('inv_dod_off_grid', 'DoD Off-grid', true),
+        picker('inv_export_limit', 'Export Limit', true),
+      ], { toggleKey: '_show_system', toggleOn: showSystem, hidden: !showSystem }),
+      divider(),
+      makeSection('mon_battery_popup', '🔋', 'Battery Popup', [
+        picker('bat_soh', 'SOH', true),
+        picker('bat_index', 'Index', true),
+        picker('bat_bms_version', 'BMS Version', true),
+        picker('bat_cell_max_temp', 'Cell Max Temp', true),
+        picker('bat_cell_min_temp', 'Cell Min Temp', true),
       ], { toggleKey: '_show_system', toggleOn: showSystem, hidden: !showSystem }),
       divider(),
       makeSection('mon_plugs', '🔌', 'Smart Plugs', [
@@ -2079,22 +2077,40 @@ class ZeeSkyCard extends HTMLElement {
           <span class="ico">☀️</span>
           <span class="lbl">${this.config.label_today_pv||'TODAY PV'}</span>
           <span class="val yw" id="invTodayPv">-- kWh</span>
+          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px;margin-top:1px">
+            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">TOTAL PV</span>
+            <span id="invTotalPv" style="font-size:.72rem;font-weight:650;color:#f4d03f">-- W</span>
+          </div>
         </div>
         <div class="pvi">
           <span class="ico">🔋</span>
-          <span class="lbl">${this.config.label_chg_dis||'CHG / DIS'}</span>
-          <span class="val" id="invTodayBattChg" style="color:#3fb950">-- kWh</span>
-          <span style="font-size:.70rem;font-weight:800;color:#f39c4b;margin-top:2px;text-align:center;display:block" id="invTodayBattDis">-- kWh</span>
+          <span class="lbl">CHG / DIS</span>
+          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px">
+            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">CHARGE</span>
+            <span id="invTodayBattChg" style="font-size:.72rem;font-weight:650;color:#3fb950">-- kWh</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px">
+            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">DISCHARGE</span>
+            <span id="invTodayBattDis" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
+          </div>
         </div>
         <div class="pvi">
           <span class="ico">🔌</span>
           <span class="lbl">${this.config.label_grid_import||'GRID IMPORT'}</span>
           <span class="val" id="invGridImport" style="color:#f39c4b">-- kWh</span>
+          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px;margin-top:1px">
+            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">EXPORT</span>
+            <span id="invGridExport" style="font-size:.72rem;font-weight:650;color:#4ade80">-- kWh</span>
+          </div>
         </div>
         <div class="pvi">
           <span class="ico">⬆️</span>
-          <span class="lbl">${this.config.label_grid_export||'GRID EXPORT'}</span>
-          <span class="val" id="invGridExport" style="color:#4ade80">-- kWh</span>
+          <span class="lbl">${this.config.label_grid_export||'TODAY LOAD'}</span>
+          <span class="val" id="invTodayLoad" style="color:#29b6f6">-- kWh</span>
+          <div style="display:flex;justify-content:space-between;width:100%;padding:0 2px;margin-top:1px">
+            <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">TOTAL LOAD</span>
+            <span id="invConsump" style="font-size:.72rem;font-weight:650;color:#e0e8f0">-- W</span>
+          </div>
         </div>
       </div>
 
@@ -2933,17 +2949,21 @@ class ZeeSkyCard extends HTMLElement {
       }
     };
 
-    // TODAY PV
+    // TODAY PV — main value + total PV power
     const _todayPvText  = _todayPvRaw !== null ? ' ' + todayPv.toFixed(1) + ' kWh' : '-- kWh';
     _invTileSet('invTodayPv', _todayPvText, '#f4d03f', 'label_entity_today_pv');
-    // CHG / DIS — override replaces charge value; discharge sub-line always stays
+    const totalPvW = totalPvSensor !== null && !isNaN(totalPvSensor) ? totalPvSensor : null;
+    setText('invTotalPv', totalPvW !== null ? totalPvW.toFixed(0) + ' W' : '-- W');
+    // CHG / DIS — charge + discharge
     const _chgText = _todayBattChgRaw !== null ? ' ' + todayBattChg.toFixed(1) + ' kWh' : '-- kWh';
     _invTileSet('invTodayBattChg', _chgText, '#3fb950', 'label_entity_chg_dis');
     setText('invTodayBattDis', battDis1Raw !== null ? ' ' + battDis1.toFixed(1) + ' kWh' : '-- kWh');
-    // TODAY LOAD (moved to stat tiles row)
+    // TODAY LOAD — main value + current consumption
     const _loadText = _todayLoadRaw !== null ? ' ' + todayLoad.toFixed(1) + ' kWh' : '-- kWh';
     _invTileSet('invTodayLoad', _loadText, '#29b6f6', 'label_entity_today_load');
-    // Grid Import — uses grid_import_today entity as primary source, label_entity_grid_import as override
+    const consumpW = load > 0 ? load : null;
+    setText('invConsump', consumpW !== null ? consumpW.toFixed(0) + ' W' : '-- W');
+    // Grid Import — main value + grid export
     const _gridImportEntityId = this.config.grid_import_today || 'sensor.goodwe_today_energy_import';
     const _gridImportStateObj = this._hass && this._hass.states[_gridImportEntityId];
     let _gridImportText = '-- kWh';
@@ -2953,7 +2973,6 @@ class ZeeSkyCard extends HTMLElement {
       _gridImportText = isNaN(_giv) ? _gridImportStateObj.state : ' ' + _giv.toFixed(1) + ' ' + _giu;
     }
     _invTileSet('invGridImport', _gridImportText, '#f39c4b', 'label_entity_grid_import');
-    // Grid Export — uses grid_export_today entity as primary source, label_entity_grid_export as override
     const _gridExportEntityId = this.config.grid_export_today || '';
     const _gridExportStateObj = _gridExportEntityId && this._hass && this._hass.states[_gridExportEntityId];
     let _gridExportText = '-- kWh';
@@ -2962,7 +2981,7 @@ class ZeeSkyCard extends HTMLElement {
       const _geu = (_gridExportStateObj.attributes?.unit_of_measurement || 'kWh').trim();
       _gridExportText = isNaN(_gev) ? _gridExportStateObj.state : ' ' + _gev.toFixed(1) + ' ' + _geu;
     }
-    _invTileSet('invGridExport', _gridExportText, '#4ade80', 'label_entity_grid_export');
+    setText('invGridExport', _gridExportText);
     // ── Remaining Ah + kWh ──
     // Each battery uses its OWN Ah capacity; battery2_full_ah defaults to fullAh if not set
     const fullAh2 = capUnit === 'ah'
@@ -3392,6 +3411,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.8',
+  version: '2.6.9',
 });
 customElements.define('zee-skycard', ZeeSkyCard);

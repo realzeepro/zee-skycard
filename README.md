@@ -399,4 +399,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.6.8*
+*Zee Energy · zee-skycard · Sky Edition v2.6.9*
