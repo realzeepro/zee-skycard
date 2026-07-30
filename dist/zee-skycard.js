@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.5
+// zee-skycard.js – Sky Edition v2.6.6
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1038,10 +1038,35 @@ class ZeeSkyCard extends HTMLElement {
       camera_4_entity: '', camera_4_name: 'Camera 4',
       _show_system: false,
       _show_smartplugs: false,
-      smart_plug_1_entity: '', smart_plug_1_name: 'Plug 1',
-      smart_plug_2_entity: '', smart_plug_2_name: 'Plug 2',
+      smart_plug_1_entity: '', smart_plug_1_name: 'Plug 1', smart_plug_1_power: '', smart_plug_1_voltage: '',
+      smart_plug_2_entity: '', smart_plug_2_name: 'Plug 2', smart_plug_2_power: '', smart_plug_2_voltage: '',
       _show_climate: false,
       climate_entity: '', clim_ac_name: 'AC',
+      // ── System monitoring entities ──
+      sys_cpu_entity: '',
+      sys_mem_entity: '',
+      sys_disk_entity: '',
+      sys_uptime_entity: 'sensor.uptime',
+      sys_core1_temp: '',
+      sys_core2_temp: '',
+      sys_package_temp: '',
+      sys_eth0_rx: '',
+      sys_eth0_tx: '',
+      sys_wlan0_rx: '',
+      sys_wlan0_tx: '',
+      // ── Inverter monitoring entities ──
+      inv_rad_temp: '',
+      inv_error_entity: '',
+      inv_mode_entity: '',
+      inv_dod_on_grid: '',
+      inv_dod_off_grid: '',
+      inv_export_limit: '',
+      // ── Battery monitoring entities ──
+      bat_soh: '',
+      bat_index: '',
+      bat_bms_version: '',
+      bat_cell_max_temp: '',
+      bat_cell_min_temp: '',
     };
   }
 
@@ -1125,6 +1150,15 @@ class ZeeSkyCard extends HTMLElement {
     let hr = target.getHours(); const ampm = hr >= 12 ? 'PM' : 'AM';
     hr = hr % 12 || 12;
     return 'Till ' + day + ' ' + hr + ':' + target.getMinutes().toString().padStart(2,'0') + ' ' + ampm;
+  }
+  _fmtUptime(seconds) {
+    if (!seconds || !isFinite(seconds) || seconds <= 0) return '--';
+    const boot = new Date(Date.now() - seconds * 1000);
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const d = boot.getDate(), m = months[boot.getMonth()], y = boot.getFullYear();
+    let h = boot.getHours(); const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${m} ${d}, ${y} at ${h}:${boot.getMinutes().toString().padStart(2,'0')} ${ampm}`;
   }
 
   _sunData() {
@@ -1279,35 +1313,12 @@ class ZeeSkyCard extends HTMLElement {
     return html;
   }
 
-  // ── MONITORING: Camera stream resolution ──
+  // ── MONITORING: Camera stream URL ──
   _resolveCameraStream(entityId) {
     if (!entityId || !this._hass) return null;
-    // Cache keyed by entityId
-    const cache = this._camCache = this._camCache || {};
-    const cached = cache[entityId];
-    if (cached && Date.now() - cached.ts < 115000) return cached.url;
-    // Try HA WebSocket signed path first
-    const ws = this._hass.connection;
-    if (ws && ws.sendMessage) {
-      ws.sendMessage({
-        type: 'auth/sign_path',
-        path: `/api/camera_proxy_stream/${entityId.replace('.', '/')}`,
-        expires: 120,
-      }).then(msg => {
-        if (msg && msg.path) {
-          const url = `${window.location.origin}${msg.path}`;
-          cache[entityId] = { url, ts: Date.now() };
-        }
-      }).catch(() => {});
-    }
-    // Fallback: entity_picture attribute
     const state = this._hass.states[entityId];
-    if (state && state.attributes && state.attributes.entity_picture) {
-      const url = state.attributes.entity_picture;
-      cache[entityId] = { url, ts: Date.now() };
-      return url;
-    }
-    return null;
+    if (state?.attributes?.entity_picture) return state.attributes.entity_picture;
+    return this._hass.hassUrl(`/api/camera_proxy_stream/${entityId.replace('.', '/')}`);
   }
 
   // ── MONITORING: Popup helpers ──
@@ -1379,77 +1390,121 @@ class ZeeSkyCard extends HTMLElement {
     let g = '';
     for (let i = 0; i < 4; i++) {
       const c = cams[i] || { name:'', src:null, eid:'' };
-      g += `<div style="aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);position:relative">${
-        c.src ? `<img src="${c.src}" alt="${c.name}" loading="lazy" style="width:100%;height:100%;object-fit:contain;display:block">`
-        : c.eid ? `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.25);font-size:.7rem">Connecting...</div>`
-        : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.15);font-size:.7rem">No camera</div>`
-      }<div style="position:absolute;bottom:0;left:0;right:0;font-size:.6rem;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.55);padding:3px 8px;text-align:center;letter-spacing:.5px">${c.name}</div></div>`;
+      const showImg = c.src ? 'block' : 'none';
+      const showMsg = c.src ? 'none' : 'flex';
+      const msg = c.eid ? '<span style="font-size:1.3rem">📷</span><span>Loading...</span>' : '<span style="font-size:1.3rem">📷</span><span>No camera</span>';
+      g += `<div style="aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);position:relative">
+        <img src="${c.src || ''}" alt="${c.name}" loading="lazy" style="width:100%;height:100%;object-fit:contain;display:${showImg};background:#000" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div style="display:${showMsg};align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.25);font-size:.7rem;flex-direction:column;gap:4px">${msg}</div>
+        <div style="position:absolute;bottom:0;left:0;right:0;font-size:.6rem;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.55);padding:3px 8px;text-align:center;letter-spacing:.5px">${c.name}</div>
+      </div>`;
     }
     this._popup(this._popupClose() + this._popupTitle('📷 Cameras') +
       `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${g}</div>`);
   }
 
   _openSystemPopup() {
-    const st = this._hass?.states || {};
-    const hv = (st['configurator']?.state || navigator.userAgent.match(/HomeAssistant\/([\d.]+)/)?.[1] || '--');
-    const os = st['sensor.version_current'] || st['sensor.supervisor_os'] || {};
-    const haSt = st['process.home_assistant'] || {};
-    const lr = haSt?.attributes?.last_restart || '--';
-    const up = this._fmtEndurance ? this._fmtEndurance(this._val('sensor.uptime') || 0) : '--';
+    const v = (e) => { const r = this._val(e); return r !== null && !isNaN(r) ? r : null; };
+    const cpu   = v(this.config.sys_cpu_entity);
+    const mem   = v(this.config.sys_mem_entity);
+    const disk  = v(this.config.sys_disk_entity);
+    const upSec = v(this.config.sys_uptime_entity);
+    const uptime = upSec !== null ? this._fmtUptime(upSec) : '--';
+    const c1    = v(this.config.sys_core1_temp);
+    const c2    = v(this.config.sys_core2_temp);
+    const pkg   = v(this.config.sys_package_temp);
+    const erx   = v(this.config.sys_eth0_rx);
+    const etx   = v(this.config.sys_eth0_tx);
+    const wrx   = v(this.config.sys_wlan0_rx);
+    const wtx   = v(this.config.sys_wlan0_tx);
+    const fmtV  = (val, unit) => val !== null ? val + (unit || '') : '--';
     this._popup(this._popupClose() + this._popupTitle('🖥️ System') + this._popupGrid([
-      this._popupItem('HA Version', hv, '#58a6ff'),
-      this._popupItem('OS', os?.state || '--'),
-      this._popupItem('Arch', os?.attributes?.arch || '--'),
-      this._popupItem('Last Restart', lr, '#8b949e'),
-      this._popupItem('Uptime', up, '#4ade80'),
+      this._popupItem('CPU Usage', fmtV(cpu, '%'), '#58a6ff'),
+      this._popupItem('Memory', fmtV(mem, '%'), '#3fb950'),
+      this._popupItem('Disk', fmtV(disk, '%'), '#f39c4b'),
+      this._popupItem('Uptime', uptime, '#4ade80'),
+      this._popupItem('Core 1 Temp', fmtV(c1, '°C'), '#e0e8f0'),
+      this._popupItem('Core 2 Temp', fmtV(c2, '°C'), '#e0e8f0'),
+      this._popupItem('Package Temp', fmtV(pkg, '°C'), '#e0e8f0'),
+      this._popupItem('Eth0 RX', fmtV(erx, ''), '#29b6f6'),
+      this._popupItem('Eth0 TX', fmtV(etx, ''), '#29b6f6'),
+      this._popupItem('Wlan0 RX', fmtV(wrx, ''), '#ce93d8'),
+      this._popupItem('Wlan0 TX', fmtV(wtx, ''), '#ce93d8'),
     ]));
   }
 
   _openInverterPopup() {
-    const pvL = this._val('number.goodwe_pv_limit_power');
-    const chC = this._val('number.goodwe_battery_charge_current');
-    const diC = this._val('number.goodwe_battery_discharge_current');
+    const v = (e) => { const r = this._val(e); return r !== null && !isNaN(r) ? r : null; };
+    const s = (e) => { const r = this._strVal(e); return r || null; };
+    const invT = v(this.config.inv_temp);
+    const radT = v(this.config.inv_rad_temp);
+    const err  = s(this.config.inv_error_entity);
+    const mode = s(this.config.inv_mode_entity);
+    const errorHtml = err && err !== '0' && err !== 'none' && err !== 'ok' && err !== 'normal'
+      ? `<span style="color:#ef4444">${err}</span>`
+      : `<span style="color:#4ade80">No Errors</span>`;
+    // Sliders
+    const dodOn  = this.config.inv_dod_on_grid ? v(this.config.inv_dod_on_grid) : null;
+    const dodOff = this.config.inv_dod_off_grid ? v(this.config.inv_dod_off_grid) : null;
+    const exLim  = this.config.inv_export_limit ? v(this.config.inv_export_limit) : null;
     const sl = (label, val, unit, min, max, step) => {
-      const v = val !== null ? val : 0;
-      const t = val !== null ? val + ' ' + unit : '-- ' + unit;
+      const vv = val !== null ? val : 0;
+      const tt = val !== null ? val + ' ' + unit : '-- ' + unit;
       return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1.2px;text-transform:uppercase">${label}</span><span style="font-size:.85rem;font-weight:650;color:#e0e8f0">${t}</span></div>
-        <input type="range" min="${min}" max="${max}" step="${step}" value="${v}" style="width:100%;accent-color:#f39c4b;height:4px;cursor:pointer" oninput="this.previousElementSibling.nextElementSibling.textContent=this.value+' ${unit}'">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1.2px;text-transform:uppercase">${label}</span><span style="font-size:.85rem;font-weight:650;color:#e0e8f0">${tt}</span></div>
+        <input type="range" min="${min}" max="${max}" step="${step}" value="${vv}" style="width:100%;accent-color:#f39c4b;height:4px;cursor:pointer" oninput="this.previousElementSibling.nextElementSibling.textContent=this.value+' ${unit}'">
         <div style="display:flex;justify-content:space-between;font-size:.55rem;color:rgba(200,215,235,0.35);margin-top:2px"><span>${min} ${unit}</span><span>${max} ${unit}</span></div>
       </div>`;
     };
-    this._popup(this._popupClose() + this._popupTitle('⚡ Inverter Controls') +
-      `<div style="margin-bottom:12px;font-size:.72rem;color:rgba(200,215,235,0.4)">Adjust inverter parameters (requires HA service calls)</div>` +
-      sl('PV Power Limit', pvL, 'W', 0, 15000, 100) +
-      sl('Charge Current', chC, 'A', 0, 200, 1) +
-      sl('Discharge Current', diC, 'A', 0, 200, 1));
+    const statsItems = [
+      this._popupItem('Inverter Temp', invT !== null ? invT + ' °C' : '--', '#e0e8f0'),
+      this._popupItem('Rad Temp', radT !== null ? radT + ' °C' : '--', '#e0e8f0'),
+      this._popupItem('Error', errorHtml, ''),
+      this._popupItem('Mode', mode !== null ? mode.charAt(0).toUpperCase() + mode.slice(1) : '--', '#58a6ff'),
+    ];
+    let controlsHtml = '';
+    if (dodOn !== null || dodOff !== null || exLim !== null) {
+      controlsHtml = `<div style="margin-top:14px">` +
+        this._popupTitle('Controls') +
+        (dodOn !== null ? sl('DoD On-grid', dodOn, '%', 0, 100, 1) : '') +
+        (dodOff !== null ? sl('DoD Off-grid', dodOff, '%', 0, 100, 1) : '') +
+        (exLim !== null ? sl('Export Limit', exLim, 'W', 0, 15000, 100) : '') +
+        `</div>`;
+    }
+    this._popup(this._popupClose() + this._popupTitle('⚡ Inverter') +
+      `<div style="margin-bottom:6px">${this._popupGrid(statsItems)}</div>${controlsHtml}`);
   }
 
   _openBatteryPopup() {
-    const _n = (v, f = 0) => (v !== null && !isNaN(v)) ? v : f;
-    const s1 = _n(this._val(this.config.battery_soc));
-    const s2 = this.config._show_battery2 ? _n(this._val(this.config.battery2_soc)) : null;
-    const v1 = _n(this._val(this.config.battery_voltage));
-    const v2 = this.config._show_battery2 ? _n(this._val(this.config.battery2_voltage)) : null;
-    const c1 = _n(this._val(this.config.battery_current));
-    const mV = _n(this._val(this.config.battery_min_cell), null);
-    const xV = _n(this._val(this.config.battery_max_cell), null);
-    const t1 = _n(this._val(this.config.battery_temp1));
-    const t2 = _n(this._val(this.config.battery_temp2));
-    const ms = _n(this._val(this.config.battery_mos));
-    const sc = (s) => s <= 25 ? '#ef4444' : s <= 50 ? '#f39c4b' : s <= 75 ? '#58a6ff' : '#4ade80';
-    const bar = (s) => `<div style="display:flex;align-items:center;gap:8px;margin:4px 0"><span style="width:38px;font-size:.72rem;font-weight:650;color:${sc(s)}">${s}%</span><div style="flex:1;height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden"><div style="height:100%;border-radius:5px;width:${s}%;background:${sc(s)};transition:width .3s ease"></div></div></div>`;
-    const av = (mV !== null && xV !== null) ? ((mV + xV) / 2).toFixed(3) : '--';
-    this._popup(this._popupClose() + this._popupTitle('🔋 Battery Detail') +
-      `<div style="margin-bottom:12px">${bar(s1)}${s2 !== null ? bar(s2) : ''}</div>` + this._popupGrid([
-      this._popupItem('Voltage', v1.toFixed(2) + ' V' + (v2 !== null ? ' / ' + v2.toFixed(2) + ' V' : ''), '#4ade80'),
-      this._popupItem('Current', c1.toFixed(1) + ' A'),
-      this._popupItem('Min Cell', mV !== null ? mV.toFixed(3) + ' V' : '--', mV !== null && mV < 3.0 ? '#ef4444' : '#4ade80'),
-      this._popupItem('Max Cell', xV !== null ? xV.toFixed(3) + ' V' : '--', xV !== null && xV > 3.65 ? '#ef4444' : '#4ade80'),
-      this._popupItem('Avg Cell', av + ' V'),
-      this._popupItem('BMS Temp', ms.toFixed(1) + ' °C', ms > 45 ? '#ef4444' : ms > 35 ? '#f39c4b' : '#e0e8f0'),
-      this._popupItem('Temp 1', t1.toFixed(1) + ' °C'),
-      this._popupItem('Temp 2', t2.toFixed(1) + ' °C'),
+    const v = (e) => { const r = this._val(e); return r !== null && !isNaN(r) ? r : null; };
+    const s = (e) => { const r = this._strVal(e); return r || null; };
+    const soc   = v(this.config.battery_soc);
+    const volt  = v(this.config.battery_voltage);
+    const pwr   = v(this.config.battery_power);
+    const cellMax = v(this.config.battery_max_cell);
+    const cellMin = v(this.config.battery_min_cell);
+    const soh   = v(this.config.bat_soh);
+    const idx   = v(this.config.bat_index);
+    const bmsVer = s(this.config.bat_bms_version);
+    const cellMaxT = v(this.config.bat_cell_max_temp);
+    const cellMinT = v(this.config.bat_cell_min_temp);
+    const bmsT   = v(this.config.battery_mos);
+    const socBar = soc !== null
+      ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="width:38px;font-size:.72rem;font-weight:650;color:${this._socColor(soc)}">${soc}%</span><div style="flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;width:${soc}%;background:${this._socColor(soc)};transition:width .3s ease"></div></div></div>`
+      : '';
+    this._popup(this._popupClose() + this._popupTitle('🔋 Battery') +
+      socBar + this._popupGrid([
+      this._popupItem('SOC', soc !== null ? soc + ' %' : '--', '#4ade80'),
+      this._popupItem('Voltage', volt !== null ? volt.toFixed(2) + ' V' : '--', '#4ade80'),
+      this._popupItem('Power', pwr !== null ? pwr.toFixed(0) + ' W' : '--', '#e0e8f0'),
+      this._popupItem('Cell Max V', cellMax !== null ? cellMax.toFixed(3) + ' V' : '--', cellMax !== null && cellMax > 3.65 ? '#ef4444' : '#4ade80'),
+      this._popupItem('Cell Min V', cellMin !== null ? cellMin.toFixed(3) + ' V' : '--', cellMin !== null && cellMin < 3.0 ? '#ef4444' : '#4ade80'),
+      this._popupItem('SOH', soh !== null ? soh + ' %' : '--', '#3fb950'),
+      this._popupItem('Index', idx !== null ? idx : '--', '#58a6ff'),
+      this._popupItem('BMS Version', bmsVer !== null ? bmsVer : '--', '#ce93d8'),
+      this._popupItem('Cell Max Temp', cellMaxT !== null ? cellMaxT.toFixed(1) + ' °C' : '--', cellMaxT !== null ? this._tempColor(cellMaxT) : '#e0e8f0'),
+      this._popupItem('Cell Min Temp', cellMinT !== null ? cellMinT.toFixed(1) + ' °C' : '--', cellMinT !== null ? this._tempColor(cellMinT) : '#e0e8f0'),
+      this._popupItem('BMS Temp', bmsT !== null ? bmsT.toFixed(1) + ' °C' : '--', bmsT !== null ? this._tempColor(bmsT) : '#e0e8f0'),
     ]));
   }
 
@@ -1460,21 +1515,31 @@ class ZeeSkyCard extends HTMLElement {
       const name = this.config[`smart_plug_${i}_name`] || `Plug ${i}`;
       const state = eid && this._hass?.states[eid] ? this._hass.states[eid] : null;
       const isOn = state && (state.state === 'on' || state.state === 'true');
-      plugs.push({ name, eid, isOn });
+      const power = this._val(this.config[`smart_plug_${i}_power`]);
+      const volt = this._val(this.config[`smart_plug_${i}_voltage`]);
+      plugs.push({ name, eid, isOn, power, volt });
     }
     const rows = plugs.map((p) => {
       const chk = p.isOn ? 'checked' : '';
-      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0">
-        <span style="font-size:.82rem;color:#e0e8f0">${p.name}</span>
-        <label style="position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;cursor:pointer">
-          <input type="checkbox" ${chk} style="opacity:0;width:0;height:0;position:absolute" onchange="
-            const o=this.closest('[data-host]')._cardHost;
-            if(o&&o._hass)o._hass.callService('switch','toggle',{entity_id:'${p.eid}'});
-            this.parentElement.querySelector('.trk').style.background=this.checked?'#03a9f4':'rgba(255,255,255,0.15)';
-            this.parentElement.querySelector('.knb').style.left=this.checked?'18px':'2px'">
-          <span class="trk" style="position:absolute;inset:0;border-radius:10px;transition:background .2s;background:${p.isOn ? '#03a9f4' : 'rgba(255,255,255,0.15)'}"></span>
-          <span class="knb" style="position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;left:${p.isOn ? '18px' : '2px'}"></span>
-        </label>
+      const pwrV = p.power !== null ? p.power.toFixed(0) + ' W' : '-- W';
+      const vltV = p.volt !== null ? p.volt.toFixed(1) + ' V' : '-- V';
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:.85rem;font-weight:600;color:#e0e8f0">${p.name}</span>
+          <label style="position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;cursor:pointer">
+            <input type="checkbox" ${chk} style="opacity:0;width:0;height:0;position:absolute" onchange="
+              const o=this.closest('[data-host]')._cardHost;
+              if(o&&o._hass)o._hass.callService('switch','toggle',{entity_id:'${p.eid}'});
+              this.parentElement.querySelector('.trk').style.background=this.checked?'#f39c4b':'rgba(255,255,255,0.15)';
+              this.parentElement.querySelector('.knb').style.left=this.checked?'18px':'2px'">
+            <span class="trk" style="position:absolute;inset:0;border-radius:10px;transition:background .2s;background:${p.isOn ? '#f39c4b' : 'rgba(255,255,255,0.15)'}"></span>
+            <span class="knb" style="position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;left:${p.isOn ? '18px' : '2px'}"></span>
+          </label>
+        </div>
+        <div style="display:flex;gap:16px;font-size:.7rem;color:rgba(200,215,235,0.6)">
+          <span>⚡ ${pwrV}</span>
+          <span>⚡ ${vltV}</span>
+        </div>
       </div>`;
     }).join('');
     this._popup(this._popupClose() + this._popupTitle('🔌 Smart Plugs') +
@@ -3278,6 +3343,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.5',
+  version: '2.6.6',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
