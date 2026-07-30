@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.7
+// zee-skycard.js – Sky Edition v2.6.8
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -654,8 +654,8 @@ class ZeeSkyCardEditor extends HTMLElement {
         picker('camera_4_entity', 'Camera 4 Entity', true),
       ], { toggleKey: '_show_camera', toggleOn: showCamera, hidden: !showCamera }),
       divider(),
-      makeSection('mon_sys_inv_bat', '🖥️', 'System / Inverter / Battery', [
-        makeSection('mon_system', '🖥️', 'System', [
+      makeSection('mon_sys_popups', '🖥️', 'System Popups', [
+        makeSection('mon_system_popup', '🖥️', 'System Popup', [
           picker('sys_cpu_entity', 'CPU Usage', true),
           picker('sys_mem_entity', 'Memory Usage', true),
           picker('sys_disk_entity', 'Disk Usage', true),
@@ -671,7 +671,7 @@ class ZeeSkyCardEditor extends HTMLElement {
           picker('sys_wlan0_tx', 'Wlan0 TX', true),
         ], {}),
         divider(),
-        makeSection('mon_inverter', '⚡', 'Inverter', [
+        makeSection('mon_inverter_popup', '⚡', 'Inverter Popup', [
           picker('inv_temp', 'Inverter Temp'),
           picker('inv_rad_temp', 'Rad Temp', true),
           picker('inv_error_entity', 'Error Entity', true),
@@ -682,7 +682,7 @@ class ZeeSkyCardEditor extends HTMLElement {
           picker('inv_export_limit', 'Export Limit', true),
         ], {}),
         divider(),
-        makeSection('mon_battery', '🔋', 'Battery', [
+        makeSection('mon_battery_popup', '🔋', 'Battery Popup', [
           picker('bat_soh', 'SOH', true),
           picker('bat_index', 'Index', true),
           picker('bat_bms_version', 'BMS Version', true),
@@ -1389,7 +1389,7 @@ class ZeeSkyCard extends HTMLElement {
     const bx = document.createElement('div');
     Object.assign(bx.style, {
       background:'rgba(15,23,42,0.82)', border:'1px solid rgba(255,255,255,0.10)',
-      borderRadius:'18px', padding:'24px 26px', maxWidth:'620px', width:'92%',
+      borderRadius:'18px', padding:'24px 26px', maxWidth:'620px', width:'92%', margin:'5px',
       maxHeight:'88vh', overflowY:'auto', position:'relative',
       boxShadow:'0 16px 56px rgba(0,0,0,0.5)',
       backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)',
@@ -1565,7 +1565,8 @@ class ZeeSkyCard extends HTMLElement {
       const current = this._val(this.config[`smart_plug_${i}_current`]);
       plugs.push({ name, eid, isOn, power, volt, current });
     }
-    const rows = plugs.map((p) => {
+    const assigned = plugs.filter(p => p.eid);
+    const rows = assigned.map((p) => {
       const chk = p.isOn ? 'checked' : '';
       const pwrV = p.power !== null ? p.power.toFixed(0) + ' W' : '-- W';
       const vltV = p.volt !== null ? p.volt.toFixed(1) + ' V' : '-- V';
@@ -3391,6 +3392,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.7',
+  version: '2.6.8',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
