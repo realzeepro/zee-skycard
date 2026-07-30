@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.10
+// zee-skycard.js – Sky Edition v2.6.11
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -625,7 +625,7 @@ class ZeeSkyCardEditor extends HTMLElement {
       switchRow('_show_inv_banner', '📛 Show Inverter Banner', 'Shows the INV temp/load badge in the flow diagram'),
       divider(),
       picker('inv_temp',   'Inverter Temp'),
-      picker('consump',    'House Consumption'),
+      picker('consump',    'House Consumption / Total Load'),
       picker('batt_dis',   'Battery Discharge Today', true),
       divider(),
       picker('today_pv',       'Today PV Generation'),
@@ -686,6 +686,7 @@ class ZeeSkyCardEditor extends HTMLElement {
         picker('bat_soh', 'SOH', true),
         picker('bat_index', 'Index', true),
         picker('bat_bms_version', 'BMS Version', true),
+        picker('bat_status', 'Battery Status', true),
         picker('bat_cell_max_temp', 'Cell Max Temp', true),
         picker('bat_cell_min_temp', 'Cell Min Temp', true),
       ], { toggleKey: '_show_system', toggleOn: showSystem, hidden: !showSystem }),
@@ -1109,6 +1110,7 @@ class ZeeSkyCard extends HTMLElement {
       bat_soh: '',
       bat_index: '',
       bat_bms_version: '',
+      bat_status: '',
       bat_cell_max_temp: '',
       bat_cell_min_temp: '',
     };
@@ -1204,7 +1206,15 @@ class ZeeSkyCard extends HTMLElement {
     h = h % 12 || 12;
     return `${m} ${d}, ${y} at ${h}:${boot.getMinutes().toString().padStart(2,'0')} ${ampm}`;
   }
-
+  _fmtNetwork(val) {
+    if (val === null || val === undefined || !isFinite(val)) return '--';
+    if (val === 0) return '0 B/s';
+    const units = ['', 'K', 'M', 'G', 'T'];
+    let idx = 0, v = Math.abs(val);
+    while (v >= 1000 && idx < units.length - 1) { v /= 1000; idx++; }
+    return (val < 0 ? '-' : '') + v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2) + ' ' + units[idx] + 'B/s';
+  }
+ 
   _sunData() {
     const attrs = this._hass?.states[this.config.sun || 'sun.sun']?.attributes;
     // Sun position uses time-based t derived from today's ACTUAL rise/set times.
@@ -1422,6 +1432,13 @@ class ZeeSkyCard extends HTMLElement {
       <div style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px">${label}</div>
       <div style="font-size:1rem;font-weight:650;color:${vClr}">${value}</div></div>`;
   }
+  _popupEntityItem(label, value, entityId, vClr = '#e0e8f0') {
+    const eid = entityId || '';
+    const click = eid ? ` onclick="window.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:'${eid}'}}))"` : '';
+    return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 12px;text-align:center${eid ? ';cursor:pointer' : ''}"${click}>
+      <div style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px">${label}</div>
+      <div style="font-size:1rem;font-weight:650;color:${vClr}">${value}</div></div>`;
+  }
 
   _openCameraPopup() {
     const cams = [];
@@ -1462,18 +1479,19 @@ class ZeeSkyCard extends HTMLElement {
     const wrx   = v(this.config.sys_wlan0_rx);
     const wtx   = v(this.config.sys_wlan0_tx);
     const fmtV  = (val, unit) => val !== null ? val + (unit || '') : '--';
+    const fmtN  = (val) => this._fmtNetwork(val);
     this._popup(this._popupClose() + this._popupTitle('🖥️ System') + this._popupGrid([
-      this._popupItem('CPU Usage', fmtV(cpu, '%'), '#58a6ff'),
-      this._popupItem('Memory', fmtV(mem, '%'), '#3fb950'),
-      this._popupItem('Disk', fmtV(disk, '%'), '#f39c4b'),
-      this._popupItem('Uptime', uptime, '#4ade80'),
-      this._popupItem('Core 1 Temp', fmtV(c1, '°C'), '#e0e8f0'),
-      this._popupItem('Core 2 Temp', fmtV(c2, '°C'), '#e0e8f0'),
-      this._popupItem('Package Temp', fmtV(pkg, '°C'), '#e0e8f0'),
-      this._popupItem('Eth0 RX', fmtV(erx, ''), '#29b6f6'),
-      this._popupItem('Eth0 TX', fmtV(etx, ''), '#29b6f6'),
-      this._popupItem('Wlan0 RX', fmtV(wrx, ''), '#ce93d8'),
-      this._popupItem('Wlan0 TX', fmtV(wtx, ''), '#ce93d8'),
+      this._popupEntityItem('CPU Usage', fmtV(cpu, '%'), this.config.sys_cpu_entity, '#58a6ff'),
+      this._popupEntityItem('Memory', fmtV(mem, '%'), this.config.sys_mem_entity, '#3fb950'),
+      this._popupEntityItem('Disk', fmtV(disk, '%'), this.config.sys_disk_entity, '#f39c4b'),
+      this._popupEntityItem('Uptime', uptime, '', '#4ade80'),
+      this._popupEntityItem('Core 1 Temp', fmtV(c1, '°C'), this.config.sys_core1_temp, '#e0e8f0'),
+      this._popupEntityItem('Core 2 Temp', fmtV(c2, '°C'), this.config.sys_core2_temp, '#e0e8f0'),
+      this._popupEntityItem('Package Temp', fmtV(pkg, '°C'), this.config.sys_package_temp, '#e0e8f0'),
+      this._popupEntityItem('Eth0 RX', fmtN(erx), this.config.sys_eth0_rx, '#29b6f6'),
+      this._popupEntityItem('Eth0 TX', fmtN(etx), this.config.sys_eth0_tx, '#29b6f6'),
+      this._popupEntityItem('Wlan0 RX', fmtN(wrx), this.config.sys_wlan0_rx, '#ce93d8'),
+      this._popupEntityItem('Wlan0 TX', fmtN(wtx), this.config.sys_wlan0_tx, '#ce93d8'),
     ]));
   }
 
@@ -1533,6 +1551,7 @@ class ZeeSkyCard extends HTMLElement {
     const cellMaxT = v(this.config.bat_cell_max_temp);
     const cellMinT = v(this.config.bat_cell_min_temp);
     const bmsT   = v(this.config.battery_mos);
+    const status = s(this.config.bat_status);
     const socBar = soc !== null
       ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="width:38px;font-size:.72rem;font-weight:650;color:${this._socColor(soc)}">${soc}%</span><div style="flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;width:${soc}%;background:${this._socColor(soc)};transition:width .3s ease"></div></div></div>`
       : '';
@@ -1546,6 +1565,7 @@ class ZeeSkyCard extends HTMLElement {
       this._popupItem('SOH', soh !== null ? soh + ' %' : '--', '#3fb950'),
       this._popupItem('Index', idx !== null ? idx : '--', '#58a6ff'),
       this._popupItem('BMS Version', bmsVer !== null ? bmsVer : '--', '#ce93d8'),
+      this._popupItem('Battery Status', status !== null ? status.charAt(0).toUpperCase() + status.slice(1) : '--', status !== null ? '#4ade80' : '#e0e8f0'),
       this._popupItem('Cell Max Temp', cellMaxT !== null ? cellMaxT.toFixed(1) + ' °C' : '--', cellMaxT !== null ? this._tempColor(cellMaxT) : '#e0e8f0'),
       this._popupItem('Cell Min Temp', cellMinT !== null ? cellMinT.toFixed(1) + ' °C' : '--', cellMinT !== null ? this._tempColor(cellMinT) : '#e0e8f0'),
       this._popupItem('BMS Temp', bmsT !== null ? bmsT.toFixed(1) + ' °C' : '--', bmsT !== null ? this._tempColor(bmsT) : '#e0e8f0'),
@@ -3401,6 +3421,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.10',
+  version: '2.6.11',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
