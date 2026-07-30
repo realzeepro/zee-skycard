@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.12
+// zee-skycard.js – Sky Edition v2.6.13
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -632,7 +632,6 @@ class ZeeSkyCardEditor extends HTMLElement {
       picker('today_batt_chg', 'Today Batt Charge'),
       picker('grid_import_today', 'Grid Import Today (kWh)', true),
       picker('grid_export_today', 'Grid Export Today (kWh)', true),
-      picker('today_load', 'Today Load (kWh)', true),
     ]));
 
     const showCamera  = !!(cfg._show_camera);
@@ -681,7 +680,7 @@ class ZeeSkyCardEditor extends HTMLElement {
         picker('inv_dod_on_grid', 'DoD On-grid', true),
         picker('inv_dod_off_grid', 'DoD Off-grid', true),
         picker('inv_export_limit', 'Export Limit', true),
-        picker('inv_max_power_entity', 'Inverter Max Power Entity', true),
+        picker('today_load', 'Today Load (kWh)', true),
         picker('total_load_entity', 'Total Load Entity (tile 4)', true),
       ], { toggleKey: '_show_system', toggleOn: showSystem, hidden: !showSystem }),
       divider(),
@@ -1106,7 +1105,7 @@ class ZeeSkyCard extends HTMLElement {
       // ── Inverter monitoring entities ──
       inv_rad_temp: '',
       inv_total_hours: '',
-      inv_max_power_entity: '',
+      // inv_max_power_entity removed — use inverter_max_power directly
       inv_error_entity: '',
       inv_mode_entity: '',
       inv_dod_on_grid: '',
@@ -1205,12 +1204,15 @@ class ZeeSkyCard extends HTMLElement {
   }
   _fmtUptime(seconds) {
     if (!seconds || !isFinite(seconds) || seconds <= 0) return '--';
-    const boot = new Date(Date.now() - seconds * 1000);
-    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const d = boot.getDate(), m = months[boot.getMonth()], y = boot.getFullYear();
-    let h = boot.getHours(); const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `${m} ${d}, ${y} at ${h}:${boot.getMinutes().toString().padStart(2,'0')} ${ampm}`;
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    let r = '';
+    if (days > 0) r += days + ' Day' + (days !== 1 ? 's' : '') + ' ';
+    if (hours > 0) r += hours + ' Hour' + (hours !== 1 ? 's' : '') + ' ';
+    if (days === 0 && mins > 0) r += mins + ' Minute' + (mins !== 1 ? 's' : '');
+    if (!r) r = 'Less than a minute';
+    return r.trim();
   }
   _fmtNetwork(val) {
     if (val === null || val === undefined || !isFinite(val)) return '--';
@@ -1218,7 +1220,12 @@ class ZeeSkyCard extends HTMLElement {
     const units = ['', 'K', 'M', 'G', 'T'];
     let idx = 0, v = Math.abs(val);
     while (v >= 1000 && idx < units.length - 1) { v /= 1000; idx++; }
-    return (val < 0 ? '-' : '') + v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2) + ' ' + units[idx] + 'B/s';
+    const s = val < 0 ? '-' : '';
+    if (v < 0.01) return s + (v * 1000).toFixed(2) + ' m' + units[idx] + 'B/s';
+    if (v < 1) return s + v.toFixed(3) + ' ' + units[idx] + 'B/s';
+    if (v < 10) return s + v.toFixed(2) + ' ' + units[idx] + 'B/s';
+    if (v < 100) return s + v.toFixed(1) + ' ' + units[idx] + 'B/s';
+    return s + v.toFixed(0) + ' ' + units[idx] + 'B/s';
   }
  
   _sunData() {
@@ -1416,6 +1423,13 @@ class ZeeSkyCard extends HTMLElement {
     this._popupOverlay = ov;
     const cb = bx.querySelector('[data-close]');
     if (cb) cb.onclick = () => this._closePopup();
+    ov.addEventListener('click', (e) => {
+      const item = e.target.closest('[data-eid]');
+      if (item) {
+        const eid = item.getAttribute('data-eid');
+        if (eid) window.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: eid } }));
+      }
+    });
     // Inject keyframe once
     if (!document.getElementById('kfc-popup-kf')) {
       const st = document.createElement('style');
@@ -1440,8 +1454,8 @@ class ZeeSkyCard extends HTMLElement {
   }
   _popupEntityItem(label, value, entityId, vClr = '#e0e8f0') {
     const eid = entityId || '';
-    const click = eid ? ` onclick="window.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:'${eid}'}}))"` : '';
-    return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 12px;text-align:center${eid ? ';cursor:pointer' : ''}"${click}>
+    const attr = eid ? ` data-eid="${eid}"` : '';
+    return `<div${attr} style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px 12px;text-align:center${eid ? ';cursor:pointer' : ''}">
       <div style="font-size:.6rem;color:rgba(200,215,235,0.5);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px">${label}</div>
       <div style="font-size:1rem;font-weight:650;color:${vClr}">${value}</div></div>`;
   }
@@ -1516,10 +1530,7 @@ class ZeeSkyCard extends HTMLElement {
     const errorHtml = err && err !== '0' && err !== 'none' && err !== 'ok' && err !== 'normal'
       ? `<span style="color:#ef4444">${err}</span>`
       : `<span style="color:#4ade80">No Errors</span>`;
-    // Get inverter max power from entity if configured, else from config fallback
-    const invMaxPwr = this.config.inv_max_power_entity
-      ? (v(this.config.inv_max_power_entity) || this.config.inverter_max_power || 6000)
-      : (this.config.inverter_max_power || 6000);
+    const invMaxPwr = this.config.inverter_max_power || 6000;
     // Sliders
     const dodOn  = this.config.inv_dod_on_grid ? v(this.config.inv_dod_on_grid) : null;
     const dodOff = this.config.inv_dod_off_grid ? v(this.config.inv_dod_off_grid) : null;
@@ -3438,6 +3449,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.12',
+  version: '2.6.13',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
