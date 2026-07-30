@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.5.0
+// zee-skycard.js – Sky Edition v2.6.0
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -69,7 +69,11 @@ class ZeeSkyCardEditor extends HTMLElement {
         key === 'label_entity_today_pv'  || key === 'label_entity_chg_dis'  ||
         key === 'label_entity_grid_import'|| key === 'label_entity_grid_export' ||
         key === 'grid_import_today'      ||
-        key.startsWith('_extra_tile_'))
+        key.startsWith('_extra_tile_')   ||
+        key.startsWith('_show_camera')   || key.startsWith('_show_system')    ||
+        key.startsWith('_show_smartplugs') || key.startsWith('_show_climate') ||
+        key.startsWith('camera_')        || key.startsWith('smart_plug_')    ||
+        key.startsWith('clim_')          || key.startsWith('climate_'))
       this._render();
   }
 
@@ -625,6 +629,43 @@ class ZeeSkyCardEditor extends HTMLElement {
       picker('grid_export_today', 'Grid Export Today (kWh)', true),
     ]));
 
+    const showCamera  = !!(cfg._show_camera);
+    const showSystem  = !!(cfg._show_system);
+    const showPlugs   = !!(cfg._show_smartplugs);
+    const showClimate = !!(cfg._show_climate);
+
+    shell.appendChild(makeSection('monitoring', '📡', 'Monitoring', [
+      makeSection('mon_cameras', '📷', 'Cameras', [
+        textField('camera_1_name', 'Camera 1 Name', 'Camera 1'),
+        picker('camera_1_entity', 'Camera 1 Entity', true),
+        divider(),
+        textField('camera_2_name', 'Camera 2 Name', 'Camera 2'),
+        picker('camera_2_entity', 'Camera 2 Entity', true),
+        divider(),
+        textField('camera_3_name', 'Camera 3 Name', 'Camera 3'),
+        picker('camera_3_entity', 'Camera 3 Entity', true),
+        divider(),
+        textField('camera_4_name', 'Camera 4 Name', 'Camera 4'),
+        picker('camera_4_entity', 'Camera 4 Entity', true),
+      ], { toggleKey: '_show_camera', toggleOn: showCamera, hidden: !showCamera }),
+      divider(),
+      makeSection('mon_system', '🖥️', 'System / Inverter / Battery Info', [
+        textField('clim_ac_name', 'AC / Climate Name', 'AC'),
+      ], { toggleKey: '_show_system', toggleOn: showSystem, hidden: !showSystem }),
+      divider(),
+      makeSection('mon_plugs', '🔌', 'Smart Plugs', [
+        textField('smart_plug_1_name', 'Plug 1 Name', 'Plug 1'),
+        picker('smart_plug_1_entity', 'Plug 1 Entity', true),
+        divider(),
+        textField('smart_plug_2_name', 'Plug 2 Name', 'Plug 2'),
+        picker('smart_plug_2_entity', 'Plug 2 Entity', true),
+      ], { toggleKey: '_show_smartplugs', toggleOn: showPlugs, hidden: !showPlugs }),
+      divider(),
+      makeSection('mon_climate', '🌡️', 'Climate', [
+        picker('climate_entity', 'Climate Entity', true),
+      ], { toggleKey: '_show_climate', toggleOn: showClimate, hidden: !showClimate }),
+    ]));
+
     shell.appendChild(makeSection('ev', '🚗', 'EV / Car Charger', [
       picker('charger_state',           'Charger State'),
       picker('charger_power',           'Charger Power'),
@@ -989,6 +1030,18 @@ class ZeeSkyCard extends HTMLElement {
       thresh_soc_low: 25, thresh_soc_critical: 15,
       thresh_load_warn: 70, thresh_load_critical: 90,
       thresh_endurance_low: 2, thresh_endurance_crit: 1,
+      // ── Monitoring section ──
+      _show_camera: false,
+      camera_1_entity: '', camera_1_name: 'Camera 1',
+      camera_2_entity: '', camera_2_name: 'Camera 2',
+      camera_3_entity: '', camera_3_name: 'Camera 3',
+      camera_4_entity: '', camera_4_name: 'Camera 4',
+      _show_system: false,
+      _show_smartplugs: false,
+      smart_plug_1_entity: '', smart_plug_1_name: 'Plug 1',
+      smart_plug_2_entity: '', smart_plug_2_name: 'Plug 2',
+      _show_climate: false,
+      climate_entity: '', clim_ac_name: 'AC',
     };
   }
 
@@ -1005,6 +1058,9 @@ class ZeeSkyCard extends HTMLElement {
     const STRUCTURAL_KEYS = [
       '_show_battery','_show_battery2','_show_pv_extra','_show_ev','_show_3phase',
       '_show_extra_tiles','battery_cap_unit','_show_inv_banner',
+      '_show_camera','camera_1_name','camera_2_name','camera_3_name','camera_4_name',
+      '_show_system','_show_smartplugs','smart_plug_1_name','smart_plug_2_name',
+      '_show_climate','clim_ac_name',
       'label_cell_temp_minmax','label_bms_temp','label_cell_volt',
       'label_pv_voltage','label_remaining','label_endurance',
       'label_today_pv','label_chg_dis','label_grid_import','label_grid_export','label_today_load',
@@ -1223,6 +1279,262 @@ class ZeeSkyCard extends HTMLElement {
     return html;
   }
 
+  // ── MONITORING: Camera stream resolution ──
+  _resolveCameraStream(entityId) {
+    if (!entityId || !this._hass) return null;
+    // Cache keyed by entityId
+    const cache = this._camCache = this._camCache || {};
+    const cached = cache[entityId];
+    if (cached && Date.now() - cached.ts < 115000) return cached.url;
+    // Try HA WebSocket signed path first
+    const ws = this._hass.connection;
+    if (ws && ws.sendMessage) {
+      ws.sendMessage({
+        type: 'auth/sign_path',
+        path: `/api/camera_proxy_stream/${entityId.replace('.', '/')}`,
+        expires: 120,
+      }).then(msg => {
+        if (msg && msg.path) {
+          const url = `${window.location.origin}${msg.path}`;
+          cache[entityId] = { url, ts: Date.now() };
+        }
+      }).catch(() => {});
+    }
+    // Fallback: entity_picture attribute
+    const state = this._hass.states[entityId];
+    if (state && state.attributes && state.attributes.entity_picture) {
+      const url = state.attributes.entity_picture;
+      cache[entityId] = { url, ts: Date.now() };
+      return url;
+    }
+    return null;
+  }
+
+  // ── MONITORING: Popup helpers ──
+  _closePopup() {
+    const ov = this._popupOverlay;
+    if (ov) { ov.remove(); this._popupOverlay = null; }
+  }
+
+  _popupOverlayEl(innerHtml) {
+    this._closePopup();
+    const overlay = document.createElement('div');
+    overlay.className = 'kfc-popup-overlay';
+    overlay._cardHost = this;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) this._closePopup(); });
+    const box = document.createElement('div');
+    box.className = 'kfc-popup-box';
+    box.innerHTML = innerHtml;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    this._popupOverlay = overlay;
+    // Close button handler
+    const closeBtn = box.querySelector('.kfc-popup-close');
+    if (closeBtn) closeBtn.addEventListener('click', () => this._closePopup());
+    return { overlay, box };
+  }
+
+  _openCameraPopup() {
+    if (!this.config._show_camera) return;
+    const cams = [];
+    for (let i = 1; i <= 4; i++) {
+      const eid = this.config[`camera_${i}_entity`];
+      const name = this.config[`camera_${i}_name`] || `Camera ${i}`;
+      const src = eid ? this._resolveCameraStream(eid) : null;
+      cams.push({ name, src, eid });
+    }
+    let camHtml = '';
+    for (let i = 0; i < 4; i++) {
+      const cam = cams[i] || { name: '', src: null, eid: '' };
+      camHtml += `<div class="kfc-popup-cam-cell">${
+        cam.src
+          ? `<img src="${cam.src}" alt="${cam.name}" loading="lazy">`
+          : cam.eid
+            ? `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.25);font-size:.7rem">Connecting...</div>`
+            : `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.15);font-size:.7rem">No camera</div>`
+      }<div class="cam-name">${cam.name}</div></div>`;
+    }
+    this._popupOverlayEl(`<div class="kfc-popup-close">&times;</div>
+      <div class="kfc-popup-title">📷 Cameras</div>
+      <div class="kfc-popup-cam-grid">${camHtml}</div>`);
+  }
+
+  _openSystemPopup() {
+    if (!this.config._show_system) return;
+    const states = this._hass?.states || {};
+    // Gather HA core info from configurator or supervisor
+    const haVersion = (states['configurator']?.state || navigator.userAgent.match(/HomeAssistant\/([\d.]+)/)?.[1] || '--');
+    const osInfo = states['sensor.version_current'] || states['sensor.supervisor_os'] || {};
+    const arch = osInfo?.attributes?.arch || '--';
+    const osName = osInfo?.state || '--';
+    // Last restart from HA process sensor
+    const haState = states['process.home_assistant'] || {};
+    const lastRestart = haState?.attributes?.last_restart || '--';
+    const uptime = this._fmtEndurance ? this._fmtEndurance(this._val('sensor.uptime') || 0) : '--';
+    this._popupOverlayEl(`<div class="kfc-popup-close">&times;</div>
+      <div class="kfc-popup-title">🖥️ System</div>
+      <div class="kfc-popup-grid">
+        <div class="kfc-popup-item"><div class="lbl">HA Version</div><div class="val blue">${haVersion}</div></div>
+        <div class="kfc-popup-item"><div class="lbl">OS</div><div class="val">${osName}</div></div>
+        <div class="kfc-popup-item"><div class="lbl">Arch</div><div class="val">${arch}</div></div>
+        <div class="kfc-popup-item"><div class="lbl">Last Restart</div><div class="val" style="font-size:.8rem">${lastRestart}</div></div>
+        <div class="kfc-popup-item" style="grid-column:1/-1"><div class="lbl">Uptime</div><div class="val green">${uptime}</div></div>
+      </div>`);
+  }
+
+  _openInverterPopup() {
+    if (!this.config._show_system) return;
+    // Slider widgets for PV limit, charge/discharge current
+    const pvLimit = this._val('number.goodwe_pv_limit_power');
+    const chgCurr = this._val('number.goodwe_battery_charge_current');
+    const disCurr = this._val('number.goodwe_battery_discharge_current');
+    this._popupOverlayEl(`<div class="kfc-popup-close">&times;</div>
+      <div class="kfc-popup-title">⚡ Inverter Controls</div>
+      <div style="margin-bottom:12px;font-size:.72rem;color:rgba(200,215,235,0.45)">Adjust inverter parameters (requires HA service calls)</div>
+      <div class="kfc-popup-item" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between"><span class="lbl">PV Power Limit</span><span class="val" style="font-size:.85rem" id="popPvLimitVal">${pvLimit !== null ? pvLimit+' W' : '-- W'}</span></div>
+        <div class="kfc-popup-slider-wrap"><input type="range" min="0" max="15000" step="100" value="${pvLimit||0}" oninput="this.parentNode.parentNode.querySelector('.val').textContent=this.value+' W'"></div>
+        <div class="slider-labels"><span>0 W</span><span>15000 W</span></div>
+      </div>
+      <div class="kfc-popup-item" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between"><span class="lbl">Charge Current</span><span class="val" style="font-size:.85rem" id="popChgCurrVal">${chgCurr !== null ? chgCurr+' A' : '-- A'}</span></div>
+        <div class="kfc-popup-slider-wrap"><input type="range" min="0" max="200" step="1" value="${chgCurr||0}" oninput="this.parentNode.parentNode.querySelector('.val').textContent=this.value+' A'"></div>
+        <div class="slider-labels"><span>0 A</span><span>200 A</span></div>
+      </div>
+      <div class="kfc-popup-item" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between"><span class="lbl">Discharge Current</span><span class="val" style="font-size:.85rem" id="popDisCurrVal">${disCurr !== null ? disCurr+' A' : '-- A'}</span></div>
+        <div class="kfc-popup-slider-wrap"><input type="range" min="0" max="200" step="1" value="${disCurr||0}" oninput="this.parentNode.parentNode.querySelector('.val').textContent=this.value+' A'"></div>
+        <div class="slider-labels"><span>0 A</span><span>200 A</span></div>
+      </div>`);
+  }
+
+  _openBatteryPopup() {
+    if (!this.config._show_system) return;
+    const _n = (v, f = 0) => (v !== null && !isNaN(v)) ? v : f;
+    const soc1  = _n(this._val(this.config.battery_soc));
+    const soc2  = this.config._show_battery2 ? _n(this._val(this.config.battery2_soc)) : null;
+    const volt1 = _n(this._val(this.config.battery_voltage));
+    const volt2 = this.config._show_battery2 ? _n(this._val(this.config.battery2_voltage)) : null;
+    const curr1 = _n(this._val(this.config.battery_current));
+    const minV  = _n(this._val(this.config.battery_min_cell), null);
+    const maxV  = _n(this._val(this.config.battery_max_cell), null);
+    const temp1 = _n(this._val(this.config.battery_temp1));
+    const temp2 = _n(this._val(this.config.battery_temp2));
+    const mos   = _n(this._val(this.config.battery_mos));
+    const socColor = (s) => s <= 25 ? '#ef4444' : s <= 50 ? '#f39c4b' : s <= 75 ? '#58a6ff' : '#4ade80';
+    const batt1Bar = `<div class="kfc-popup-batt-bar"><span style="width:38px;font-size:.72rem;font-weight:650;color:${socColor(soc1)}">${soc1}%</span><div class="track"><div class="fill" style="width:${soc1}%;background:${socColor(soc1)}"></div></div></div>`;
+    const batt2Bar = soc2 !== null ? `<div class="kfc-popup-batt-bar"><span style="width:38px;font-size:.72rem;font-weight:650;color:${socColor(soc2)}">${soc2}%</span><div class="track"><div class="fill" style="width:${soc2}%;background:${socColor(soc2)}"></div></div></div>` : '';
+    const avgCell = (minV !== null && maxV !== null) ? ((minV + maxV) / 2).toFixed(3) : '--';
+    this._popupOverlayEl(`<div class="kfc-popup-close">&times;</div>
+      <div class="kfc-popup-title">🔋 Battery Detail</div>
+      <div style="margin-bottom:12px">${batt1Bar}${batt2Bar}</div>
+      <div class="kfc-popup-grid">
+        <div class="kfc-popup-item"><div class="lbl">Voltage</div><div class="val green">${volt1.toFixed(2)} V${volt2 !== null ? ' / ' + volt2.toFixed(2) + ' V' : ''}</div></div>
+        <div class="kfc-popup-item"><div class="lbl">Current</div><div class="val">${curr1.toFixed(1)} A</div></div>
+        <div class="kfc-popup-item"><div class="lbl">Min Cell</div><div class="val ${minV !== null && minV < 3.0 ? 'red' : 'green'}">${minV !== null ? minV.toFixed(3) + ' V' : '--'}</div></div>
+        <div class="kfc-popup-item"><div class="lbl">Max Cell</div><div class="val ${maxV !== null && maxV > 3.65 ? 'red' : 'green'}">${maxV !== null ? maxV.toFixed(3) + ' V' : '--'}</div></div>
+        <div class="kfc-popup-item"><div class="lbl">Avg Cell</div><div class="val">${avgCell} V</div></div>
+        <div class="kfc-popup-item"><div class="lbl">BMS Temp</div><div class="val ${mos > 45 ? 'red' : mos > 35 ? 'orange' : ''}">${mos.toFixed(1)} °C</div></div>
+        <div class="kfc-popup-item"><div class="lbl">Temp 1</div><div class="val">${temp1.toFixed(1)} °C</div></div>
+        <div class="kfc-popup-item"><div class="lbl">Temp 2</div><div class="val">${temp2.toFixed(1)} °C</div></div>
+      </div>`);
+  }
+
+  _openSmartPlugPopup() {
+    if (!this.config._show_smartplugs) return;
+    const plugs = [];
+    for (let i = 1; i <= 2; i++) {
+      const eid = this.config[`smart_plug_${i}_entity`];
+      const name = this.config[`smart_plug_${i}_name`] || `Plug ${i}`;
+      const state = eid && this._hass?.states[eid] ? this._hass.states[eid] : null;
+      const isOn = state && (state.state === 'on' || state.state === 'true');
+      plugs.push({ name, eid, state, isOn });
+    }
+    // Build toggle HTML with inline handlers via cloned template pattern
+    const plugRows = plugs.map((p, i) => {
+      const toggledId = `plugToggle${i}`;
+      const onAttr = p.isOn ? ' on' : '';
+      return `<div class="kfc-popup-row">
+        <span style="font-size:.82rem;color:#e0e8f0">${p.name}</span>
+        <label class="kfc-popup-toggle${onAttr}" id="${toggledId}">
+          <input type="checkbox" ${p.isOn ? 'checked' : ''} onchange="
+            const o=this.closest('.kfc-popup-overlay')._cardHost;
+            if(o&&o._hass)o._hass.callService('switch','toggle',{entity_id:'${p.eid}'});
+            this.closest('.kfc-popup-toggle').classList.toggle('on');
+          ">
+          <span class="track"></span><span class="knob"></span>
+        </label>
+      </div>`;
+    }).join('');
+    this._popupOverlayEl(`<div class="kfc-popup-close">&times;</div>
+      <div class="kfc-popup-title">🔌 Smart Plugs</div>
+      ${plugRows || '<div style="color:rgba(200,215,235,0.4);font-size:.8rem;text-align:center;padding:20px 0">No smart plugs configured</div>'}`);
+  }
+
+  _openClimatePopup() {
+    if (!this.config._show_climate) return;
+    const eid = this.config.climate_entity;
+    const name = this.config.clim_ac_name || 'AC';
+    const state = eid && this._hass?.states[eid] ? this._hass.states[eid] : null;
+    const temp = state ? parseFloat(state.attributes?.temperature || state.state) : null;
+    const curTemp = state ? parseFloat(state.attributes?.current_temperature) : null;
+    const hvacMode = state?.state || 'off';
+    const fanMode = state?.attributes?.fan_mode || '';
+    const swingMode = state?.attributes?.swing_mode || '';
+    const isOn = hvacMode === 'heat' || hvacMode === 'cool' || hvacMode === 'heat_cool' || hvacMode === 'auto' || hvacMode === 'fan_only' || hvacMode === 'dry';
+    const modes = ['off', 'cool', 'heat', 'auto', 'fan_only', 'dry'];
+    const fans = state?.attributes?.fan_modes || [];
+    const swings = state?.attributes?.swing_modes || [];
+    const tempVal = temp !== null && !isNaN(temp) ? temp : 24;
+    const curTempHtml = curTemp !== null && !isNaN(curTemp) ? `<span style="font-size:.72rem;color:rgba(200,215,235,0.45)"> (${curTemp.toFixed(1)}°C indoors)</span>` : '';
+    this._popupOverlayEl(`<div class="kfc-popup-close">&times;</div>
+      <div class="kfc-popup-title">🌡️ ${name}${curTempHtml}</div>
+      <div style="text-align:center;margin-bottom:14px">
+        <div style="font-size:2.2rem;font-weight:650;color:#e0e8f0">${tempVal.toFixed(1)}°C</div>
+        <div style="font-size:.68rem;color:rgba(200,215,235,0.45);text-transform:uppercase;letter-spacing:1px">Set Temperature</div>
+        <div class="kfc-popup-stepper" style="justify-content:center;margin-top:6px">
+          <button onclick="
+            const o=this.closest('.kfc-popup-overlay')._cardHost;
+            if(o&&o._hass)o._hass.callService('climate','set_temperature',{entity_id:'${eid}',temperature:${(tempVal-1).toFixed(1)}});
+            this.nextElementSibling.textContent=(${(tempVal-1).toFixed(1)})+'°C'">&minus;</button>
+          <span>${tempVal.toFixed(1)}°C</span>
+          <button onclick="
+            const o=this.closest('.kfc-popup-overlay')._cardHost;
+            if(o&&o._hass)o._hass.callService('climate','set_temperature',{entity_id:'${eid}',temperature:${(tempVal+1).toFixed(1)}});
+            this.previousElementSibling.textContent=(${(tempVal+1).toFixed(1)})+'°C'">+</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px">
+        ${modes.map(m => `<span class="kfc-popup-chip${hvacMode === m ? ' on' : ''}" onclick="
+          const o=this.closest('.kfc-popup-overlay').host||document.querySelector('zee-skycard');
+          if(o&&o._hass)o._hass.callService('climate','set_hvac_mode',{entity_id:'${eid}',hvac_mode:'${m}'});
+          this.parentNode.querySelectorAll('.kfc-popup-chip').forEach(c=>c.classList.remove('on'));
+          this.classList.add('on')">${m.replace('_',' ')}</span>`).join('')}
+      </div>
+      ${fans.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px">
+        <span style="font-size:.6rem;color:rgba(200,215,235,0.45);letter-spacing:1px;text-transform:uppercase;width:100%;text-align:center;margin-bottom:2px">Fan</span>
+        ${fans.map(f => `<span class="kfc-popup-chip${fanMode === f ? ' on' : ''}" onclick="
+          const o=this.closest('.kfc-popup-overlay').host||document.querySelector('zee-skycard');
+          if(o&&o._hass)o._hass.callService('climate','set_fan_mode',{entity_id:'${eid}',fan_mode:'${f}'});
+          this.parentNode.querySelectorAll('.kfc-popup-chip').forEach(c=>c.classList.remove('on'));
+          this.classList.add('on')">${f}</span>`).join('')}
+      </div>` : ''}
+      ${swings.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+        <span style="font-size:.6rem;color:rgba(200,215,235,0.45);letter-spacing:1px;text-transform:uppercase;width:100%;text-align:center;margin-bottom:2px">Swing</span>
+        ${swings.map(s => `<span class="kfc-popup-chip${swingMode === s ? ' on' : ''}" onclick="
+          const o=this.closest('.kfc-popup-overlay').host||document.querySelector('zee-skycard');
+          if(o&&o._hass)o._hass.callService('climate','set_swing_mode',{entity_id:'${eid}',swing_mode:'${s}'});
+          this.parentNode.querySelectorAll('.kfc-popup-chip').forEach(c=>c.classList.remove('on'));
+          this.classList.add('on')">${s}</span>`).join('')}
+      </div>` : ''}
+      <div style="margin-top:12px;display:flex;justify-content:center">
+        <span class="kfc-popup-chip${isOn ? ' on' : ''}" onclick="
+          const o=this.closest('.kfc-popup-overlay').host||document.querySelector('zee-skycard');
+          if(o&&o._hass)o._hass.callService('climate','toggle',{entity_id:'${eid}'});
+          this.classList.toggle('on')">${isOn ? '✓ ON' : 'OFF'}</span>
+      </div>`);
+  }
+
   _buildStaticSVG() {
     const dual = !!(this.config._show_battery2);
     const showBatt1 = !!(this.config._show_battery !== false);
@@ -1303,6 +1615,7 @@ class ZeeSkyCard extends HTMLElement {
       @keyframes kfcLightning{0%,85%,88%,92%,100%{opacity:0}86%,90%{opacity:.8}}
       @keyframes kfcFogDrift{0%{transform:translateX(-6%)}100%{transform:translateX(6%)}}
       @keyframes kfcSunPulse{0%,100%{opacity:.16;transform:translate(-50%,-50%) scale(1)}50%{opacity:.28;transform:translate(-50%,-50%) scale(1.07)}}
+      @keyframes kfcFadeIn{from{opacity:0}to{opacity:1}}
       .kfc-shell{position:relative;overflow:hidden;border-radius:14px;padding:10px 8px;
         box-shadow:0 4px 28px rgba(0,0,0,.65);width:100%;box-sizing:border-box;
         border:1px solid rgba(255,255,255,.06);background:rgb(21,47,85);transition:background 1.2s ease;
@@ -1334,6 +1647,44 @@ class ZeeSkyCard extends HTMLElement {
       .kfc-pwr-fill-area{position:absolute;left:0;top:0;bottom:0;right:0;overflow:hidden;border-radius:2px}
       #pwrBar{position:absolute;top:0;left:0;bottom:0;width:0%;height:100%;border-radius:2px;transition:width .4s ease,background .4s ease}
       .kfc-bar-pct{position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:.58rem;font-weight:650;color:#29b6f6;line-height:1;white-space:nowrap;z-index:2;pointer-events:none}
+      /* ── Popup overlay styles ── */
+      .kfc-popup-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);animation:kfcFadeIn .18s ease;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+      .kfc-popup-box{background:rgba(18,28,48,0.94);border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:22px 24px;max-width:620px;width:92%;max-height:88vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,0.6);position:relative;animation:kfcFadeIn .22s ease}
+      .kfc-popup-close{position:absolute;top:12px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-size:1.1rem;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;line-height:1}
+      .kfc-popup-close:hover{background:rgba(255,255,255,0.15)}
+      .kfc-popup-title{font-size:.82rem;font-weight:650;letter-spacing:2px;text-transform:uppercase;color:#f39c4b;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+      .kfc-popup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .kfc-popup-item{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px;text-align:center}
+      .kfc-popup-item .lbl{font-size:.6rem;color:rgba(200,215,235,0.55);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px}
+      .kfc-popup-item .val{font-size:1rem;font-weight:650;color:#e0e8f0}
+      .kfc-popup-item .val.green{color:#4ade80}
+      .kfc-popup-item .val.yellow{color:#f4d03f}
+      .kfc-popup-item .val.orange{color:#f39c4b}
+      .kfc-popup-item .val.red{color:#ef4444}
+      .kfc-popup-item .val.blue{color:#58a6ff}
+      .kfc-popup-chip{display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#c9d1d9}
+      .kfc-popup-chip.on{background:var(--primary-color,#03a9f4);border-color:var(--primary-color,#03a9f4);color:#fff}
+      .kfc-popup-toggle{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;cursor:pointer}
+      .kfc-popup-toggle input{opacity:0;width:0;height:0;position:absolute}
+      .kfc-popup-toggle .track{position:absolute;inset:0;border-radius:10px;transition:background .2s;background:rgba(255,255,255,0.15)}
+      .kfc-popup-toggle .knob{position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;left:2px}
+      .kfc-popup-toggle.on .track{background:#03a9f4}
+      .kfc-popup-toggle.on .knob{left:18px}
+      .kfc-popup-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0}
+      .kfc-popup-stepper{display:flex;align-items:center;gap:4px}
+      .kfc-popup-stepper button{width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+      .kfc-popup-stepper button:hover{background:rgba(255,255,255,0.15)}
+      .kfc-popup-stepper span{min-width:40px;text-align:center;font-size:1rem;font-weight:650;color:#e0e8f0}
+      .kfc-popup-slider-wrap{padding:4px 0 8px}
+      .kfc-popup-slider-wrap input[type=range]{width:100%;accent-color:#f39c4b;height:4px;cursor:pointer}
+      .kfc-popup-slider-wrap .slider-labels{display:flex;justify-content:space-between;font-size:.58rem;color:rgba(200,215,235,0.45);margin-top:2px}
+      .kfc-popup-batt-bar{display:flex;align-items:center;gap:8px;margin:4px 0}
+      .kfc-popup-batt-bar .track{flex:1;height:10px;background:rgba(255,255,255,0.06);border-radius:5px;overflow:hidden}
+      .kfc-popup-batt-bar .fill{height:100%;border-radius:5px;transition:width .3s ease}
+      .kfc-popup-cam-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      .kfc-popup-cam-cell{aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);position:relative}
+      .kfc-popup-cam-cell img{width:100%;height:100%;object-fit:contain;display:block}
+      .kfc-popup-cam-cell .cam-name{position:absolute;bottom:0;left:0;right:0;font-size:.6rem;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.55);padding:3px 8px;text-align:center;letter-spacing:.5px}
     </style>
     <div class="kfc-shell" id="kfcShell">
       <div id="kfcSkyDiv" aria-hidden="true"></div>
@@ -1670,6 +2021,45 @@ class ZeeSkyCard extends HTMLElement {
           <span class="ico">⬆️</span>
           <span class="lbl">${this.config.label_grid_export||'GRID EXPORT'}</span>
           <span class="val" id="invGridExport" style="color:#4ade80">-- kWh</span>
+        </div>
+      </div>
+
+      <!-- ── MONITORING SECTION ── -->
+      <div class="ct">&#x2014; MONITORING</div>
+      <div class="pvf" id="monRow1">
+        <div class="pvi" id="monTileCamera" style="cursor:pointer" onclick="this.getRootNode().host._openCameraPopup()">
+          <span class="ico">📷</span>
+          <span class="lbl">CAMERAS</span>
+          <span class="val" style="color:#4ade80;font-size:.68rem" id="monCamBadge">LIVE</span>
+        </div>
+        <div class="pvi" id="monTileSystem" style="cursor:pointer" onclick="this.getRootNode().host._openSystemPopup()">
+          <span class="ico">🖥️</span>
+          <span class="lbl">SYSTEM</span>
+          <span class="val" style="color:#58a6ff;font-size:.68rem" id="monSysBadge">STATS</span>
+        </div>
+        <div class="pvi" id="monTileInv" style="cursor:pointer" onclick="this.getRootNode().host._openInverterPopup()">
+          <span class="ico">⚡</span>
+          <span class="lbl">INVERTER</span>
+          <span class="val" style="color:#f4d03f;font-size:.68rem" id="monInvBadge">INFO</span>
+        </div>
+        <div class="pvi" id="monTileBatt" style="cursor:pointer" onclick="this.getRootNode().host._openBatteryPopup()">
+          <span class="ico">🔋</span>
+          <span class="lbl">BATTERY</span>
+          <span class="val" style="color:#3ce878;font-size:.68rem" id="monBattBadge">DETAIL</span>
+        </div>
+      </div>
+      <div id="monRow2" ${(!this.config._show_smartplugs && !this.config._show_climate) ? 'style="display:none"' : ''}>
+        <div class="pvf" style="margin-top:6px">
+          <div class="pvi" id="monTilePlugs" style="cursor:pointer;${this.config._show_smartplugs?'':'display:none'}" onclick="this.getRootNode().host._openSmartPlugPopup()">
+            <span class="ico">🔌</span>
+            <span class="lbl">SMART PLUGS</span>
+            <span class="val" style="color:#f39c4b;font-size:.68rem" id="monPlugBadge">CTRL</span>
+          </div>
+          <div class="pvi" id="monTileClimate" style="cursor:pointer;${this.config._show_climate?'':'display:none'}" onclick="this.getRootNode().host._openClimatePopup()">
+            <span class="ico">🌡️</span>
+            <span class="lbl" id="monClimLabel">${this.config.clim_ac_name||'CLIMATE'}</span>
+            <span class="val" style="color:#29b6f6;font-size:.68rem" id="monClimBadge">CTRL</span>
+          </div>
         </div>
       </div>
       </div><!-- /kfc-content -->
@@ -2909,6 +3299,21 @@ class ZeeSkyCard extends HTMLElement {
         el.style.color = '#ffffff';
       }
     }
+
+    // ── Monitoring section dynamic visibility ──
+    const monRow2 = getEl('monRow2');
+    if (monRow2) {
+      const showPlugs = !!this.config._show_smartplugs;
+      const showClim  = !!this.config._show_climate;
+      monRow2.style.display = (showPlugs || showClim) ? '' : 'none';
+      const plugTile = getEl('monTilePlugs');
+      if (plugTile) plugTile.style.display = showPlugs ? '' : 'none';
+      const climTile = getEl('monTileClimate');
+      if (climTile) climTile.style.display = showClim ? '' : 'none';
+    }
+    // Refresh climate name label
+    const climLbl = getEl('monClimLabel');
+    if (climLbl) climLbl.textContent = this.config.clim_ac_name || 'CLIMATE';
   }
 }
 window.customCards = window.customCards || [];
@@ -2917,6 +3322,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.5.0',
+  version: '2.6.0',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
