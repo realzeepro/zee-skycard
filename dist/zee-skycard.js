@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.17
+// zee-skycard.js – Sky Edition v2.6.18
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -626,9 +626,12 @@ class ZeeSkyCardEditor extends HTMLElement {
       divider(),
       picker('inv_temp',   'Inverter Temp'),
       picker('consump',    'House Consumption'),
+      picker('load_voltage', 'Load Voltage', true),
       divider(),
       picker('today_batt_chg', 'Today Batt Charge'),
       picker('batt_dis',       'Today Batt Discharge', true),
+      picker('total_batt_chg', 'Total Batt Charge', true),
+      picker('total_batt_dis', 'Total Batt Discharge', true),
       picker('today_pv',       'Today PV Generation'),
       picker('total_pv',       'Total PV Generation'),
       picker('today_load', 'Today Load (tile 4)', true),
@@ -1040,6 +1043,7 @@ class ZeeSkyCard extends HTMLElement {
       grid_export_today: 'sensor.goodwe_today_energy_export',
       grid_power_alt: 'sensor.grid_phase_a_power',
       grid_voltage: '',
+      load_voltage: '',
       _show_3phase: false,
       grid_phase_a: '',
       grid_phase_b: '',
@@ -1104,6 +1108,8 @@ class ZeeSkyCard extends HTMLElement {
       sys_wlan0_tx: '',
       total_load_entity: '',
       total_pv: '',
+      total_batt_chg: '',
+      total_batt_dis: '',
       grid_import_total: '',
       grid_export_total: '',
       // ── Inverter monitoring entities ──
@@ -1526,7 +1532,7 @@ class ZeeSkyCard extends HTMLElement {
       this._popupEntityItem('CPU Usage', fmtV(cpu, '%'), this.config.sys_cpu_entity, '#58a6ff'),
       this._popupEntityItem('Memory', fmtV(mem, '%'), this.config.sys_mem_entity, '#3fb950'),
       this._popupEntityItem('Disk', fmtV(disk, '%'), this.config.sys_disk_entity, '#f39c4b'),
-      this._popupEntityItem('Uptime', uptime, '', '#4ade80'),
+      this._popupEntityItem('Uptime', uptime, this.config.sys_uptime_entity, '#4ade80'),
       this._popupEntityItem('Core 1 Temp', fmtV(c1, '°C'), this.config.sys_core1_temp, '#e0e8f0'),
       this._popupEntityItem('Core 2 Temp', fmtV(c2, '°C'), this.config.sys_core2_temp, '#e0e8f0'),
       this._popupEntityItem('Package Temp', fmtV(pkg, '°C'), this.config.sys_package_temp, '#e0e8f0'),
@@ -1571,7 +1577,7 @@ class ZeeSkyCard extends HTMLElement {
         <span style="flex-shrink:0;font-size:.85rem;line-height:1">${icon}</span>
         <span style="flex-shrink:0;font-size:.72rem;color:rgba(200,215,235,0.7);max-width:38%">${label}</span>
         <div style="flex:1;display:flex;align-items:center;gap:6px">
-          <div style="flex:1;position:relative;height:4px;background:rgba(255,255,255,0.08);border-radius:2px">
+          <div style="flex:1;position:relative;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-left:15px">
             <div style="width:${pct}%;height:100%;background:#f39c4b;border-radius:2px;transition:width .1s" class="sl-fill"></div>
             <div style="position:absolute;top:50%;left:${pct}%;width:14px;height:14px;background:#fff;border:2px solid #f39c4b;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.3);transition:left .1s" class="sl-thumb"></div>
             <input type="range" min="${min}" max="${max}" step="${step}" value="${vv}" style="position:absolute;left:0;right:0;top:-9px;height:22px;margin:0;opacity:0;cursor:pointer" oninput="
@@ -1652,28 +1658,37 @@ class ZeeSkyCard extends HTMLElement {
       plugs.push({ name, eid, isOn, power, volt, current });
     }
     const assigned = plugs.filter(p => p.eid);
+    // One metric stat block (larger, labelled) inside a plug card
+    const plugMetric = (icon, label, value, clr) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center">
+      <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
+      <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
+    </div>`;
     const rows = assigned.map((p) => {
       const chk = p.isOn ? 'checked' : '';
       const pwrV = p.power !== null ? p.power.toFixed(0) + ' W' : '-- W';
       const vltV = p.volt !== null ? p.volt.toFixed(1) + ' V' : '-- V';
       const curV = p.current !== null ? p.current.toFixed(2) + ' A' : '-- A';
-      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 14px;margin-bottom:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:.85rem;font-weight:600;color:#e0e8f0">${p.name}</span>
-          <label style="position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;cursor:pointer">
+      return `<div style="background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-size:1.1rem;line-height:1;flex-shrink:0">🔌</span>
+            <span style="font-size:.95rem;font-weight:650;color:#e0e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
+            <span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;background:${p.isOn ? 'rgba(243,156,75,0.18)' : 'rgba(255,255,255,0.06)'};color:${p.isOn ? '#f39c4b' : 'rgba(200,215,235,0.5)'}">${p.isOn ? 'On' : 'Off'}</span>
+          </div>
+          <label style="position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;cursor:pointer">
             <input type="checkbox" ${chk} style="opacity:0;width:0;height:0;position:absolute" onchange="
               const o=this.closest('[data-host]')._cardHost;
               if(o&&o._hass)o._hass.callService('switch','toggle',{entity_id:'${p.eid}'});
               this.parentElement.querySelector('.trk').style.background=this.checked?'#f39c4b':'rgba(255,255,255,0.15)';
-              this.parentElement.querySelector('.knb').style.left=this.checked?'18px':'2px'">
-            <span class="trk" style="position:absolute;inset:0;border-radius:10px;transition:background .2s;background:${p.isOn ? '#f39c4b' : 'rgba(255,255,255,0.15)'}"></span>
-            <span class="knb" style="position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;left:${p.isOn ? '18px' : '2px'}"></span>
+              this.parentElement.querySelector('.knb').style.left=this.checked?'20px':'2px'">
+            <span class="trk" style="position:absolute;inset:0;border-radius:12px;transition:background .2s;background:${p.isOn ? '#f39c4b' : 'rgba(255,255,255,0.15)'}"></span>
+            <span class="knb" style="position:absolute;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .2s;left:${p.isOn ? '20px' : '2px'}"></span>
           </label>
         </div>
-        <div style="display:flex;gap:16px;font-size:.7rem;color:rgba(200,215,235,0.6)">
-          <span>⚡ ${pwrV}</span>
-          <span>⚡ ${vltV}</span>
-          <span>⚡ ${curV}</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          ${plugMetric('⚡', 'Power', pwrV, '#f39c4b')}
+          ${plugMetric('🔌', 'Voltage', vltV, '#29b6f6')}
+          ${plugMetric('〰️', 'Current', curV, '#4ade80')}
         </div>
       </div>`;
     }).join('');
@@ -1741,8 +1756,8 @@ class ZeeSkyCard extends HTMLElement {
     const showPvExtra = !!(this.config._show_pv_extra);
     const iconPath = '/local/community/zee-skycard';    // icons served from HACS community folder
 
-    const pv3txt = showPvExtra ? `<text id="pv3FlowVal" x="450" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
-    const pv4txt = showPvExtra ? `<text id="pv4FlowVal" x="500" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
+    const pv3txt = showPvExtra ? `<text id="pv3FlowVal" x="450" y="421" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
+    const pv4txt = showPvExtra ? `<text id="pv4FlowVal" x="500" y="421" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
 
     // EV banner — styled to match the PV sun bubble (sharp bottom-left, pill shape, 60% transparent)
     const evtxt = ev ? `<g id="evGroup">
@@ -2003,10 +2018,9 @@ class ZeeSkyCard extends HTMLElement {
 
       <!-- GRID col — single power+volt by default; L1/L2/L3 sub-values when 3-phase enabled -->
       <text x="75" y="400" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">GRID</text>
-      <!-- Default: single total power value -->
-      <text id="fcGridVal" x="75" y="416" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">0 W</text>
-      <!-- Default: single grid voltage below power -->
-      <text id="fcGridVoltVal" x="75" y="429" text-anchor="middle" font-size="8" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
+      <!-- Default: power (left) + voltage (right) side-by-side on one baseline -->
+      <text id="fcGridVal" x="45" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">0 W</text>
+      <text id="fcGridVoltVal" x="112" y="421" text-anchor="middle" font-size="9" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
       <!-- 3-phase sub-row: L1 | L2 | L3 — hidden by default, shown when _show_3phase enabled -->
       <g id="grid3PhaseVertical" display="none">
         <!-- L1 -->
@@ -2023,15 +2037,16 @@ class ZeeSkyCard extends HTMLElement {
         <text id="fcGridL3VoltVal" x="122" y="430" font-size="6.5" font-weight="400" fill="rgba(180,200,230,0.45)" text-anchor="middle">-- V</text>
       </g>
 
-      <!-- LOAD col -->
+      <!-- LOAD col — power (left) + voltage (right) side-by-side -->
       <text x="254" y="400" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">LOAD</text>
-      <text id="fcLoadVal" x="254" y="427" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">-- W</text>
+      <text id="fcLoadVal" x="222" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">-- W</text>
+      <text id="fcLoadVoltVal" x="290" y="421" text-anchor="middle" font-size="9" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
 
       <!-- PV col -->
       <text x="420" y="400" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.75)" letter-spacing="2.5" font-weight="570">PV</text>
       <text id="fcPvGenBelowVal" x="-999" y="-999" font-size="1" fill="none">-- kW</text>
-      <text id="fcPv1SubVal" x="${showPvExtra ? '350' : '370'}" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#e0e8f0">-- W</text>
-      <text id="fcPv2SubVal" x="${showPvExtra ? '400' : '470'}" y="427" text-anchor="middle" font-size="11" font-weight="650" fill="#e0e8f0">-- W</text>
+      <text id="fcPv1SubVal" x="${showPvExtra ? '350' : '370'}" y="421" text-anchor="middle" font-size="11" font-weight="650" fill="#e0e8f0">-- W</text>
+      <text id="fcPv2SubVal" x="${showPvExtra ? '400' : '470'}" y="421" text-anchor="middle" font-size="11" font-weight="650" fill="#e0e8f0">-- W</text>
       ${pv3txt}${pv4txt}
 
       <!-- Horizontal rule — floor of table row -->
@@ -2138,9 +2153,9 @@ class ZeeSkyCard extends HTMLElement {
           <div style="display:flex;align-items:center;gap:7px">
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">🔋</span>
             <div style="min-width:0">
-              <div class="l">${this.config.label_today_batt_charge||'Today Batt Charge'}</div>
+              <div class="l">${this.config.label_today_batt_charge||'Batt Charge'}</div>
               <div class="v" id="invTodayBattChg" style="color:#29b6f6">-- kWh</div>
-              <div class="l">${this.config.label_today_batt_discharge||'Today Batt Discharge'}</div>
+              <div class="l">${this.config.label_today_batt_discharge||'Batt Discharge'}</div>
               <div class="v" id="invTodayBattDis" style="color:#29b6f6">-- kWh</div>
             </div>
           </div>
@@ -2172,10 +2187,10 @@ class ZeeSkyCard extends HTMLElement {
         </div>
         <div class="pvi">
           <span class="ico">🔋</span>
-          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Today Charge</span>
-          <span id="invTodayBattChg" style="font-size:.72rem;font-weight:650;color:#3fb950">-- kWh</span>
-          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total Discharge</span>
-          <span id="invTodayBattDis" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Total Batt Charge</span>
+          <span id="invTotalBattChg" style="font-size:.72rem;font-weight:650;color:#3fb950">-- kWh</span>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total Batt Discharge</span>
+          <span id="invTotalBattDis" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
         </div>
         <div class="pvi">
           <span class="ico">🔌</span>
@@ -2911,6 +2926,16 @@ class ZeeSkyCard extends HTMLElement {
       _loadFcEl.textContent = load > 0 ? (load >= 1000 ? ' ' + (load / 1000).toFixed(1) + ' kW' : ' ' + load.toFixed(0) + ' W') : (this.config.consump ? '-- W' : '--');
       _loadFcEl.setAttribute('fill', _loadColor);
     }
+    // Load voltage (right of load power) — mirrors the grid-voltage readout
+    const _loadVoltEl = getEl('fcLoadVoltVal');
+    if (_loadVoltEl) {
+      const _lvEntityId = this.config.load_voltage || '';
+      const _lvState = _lvEntityId && this._hass?.states[_lvEntityId];
+      const _lvVal = _lvState && _lvState.state !== 'unavailable' && _lvState.state !== 'unknown'
+        ? parseFloat(_lvState.state) : null;
+      _loadVoltEl.textContent = (_lvVal !== null && !isNaN(_lvVal)) ? _lvVal.toFixed(0) + ' V' : '-- V';
+      _loadVoltEl.setAttribute('fill', load > 0 ? 'rgba(200,220,255,0.75)' : 'rgba(180,190,210,0.35)');
+    }
 
     // Grid col: red=importing, green=exporting, gray=idle
     const gridFcEl    = getEl('fcGridVal');
@@ -3028,21 +3053,30 @@ class ZeeSkyCard extends HTMLElement {
       }
     };
 
-    // TODAY PV — main value + total PV power
+    // Reads a cumulative-energy sensor and returns " <value> <unit>" (unit from
+    // the entity's own attribute, default kWh), or "-- kWh" when unavailable.
+    const _energyText = (entityId) => {
+      const so = entityId && this._hass && this._hass.states[entityId];
+      if (!so || so.state === 'unavailable' || so.state === 'unknown') return '-- kWh';
+      const val = parseFloat(so.state);
+      if (isNaN(val)) return so.state;
+      const unit = (so.attributes?.unit_of_measurement || 'kWh').trim();
+      return ' ' + val.toFixed(1) + ' ' + unit;
+    };
+    // TODAY PV — today total + cumulative Total PV (from the dedicated total_pv sensor)
     const _todayPvText  = _todayPvRaw !== null ? ' ' + todayPv.toFixed(1) + ' kWh' : '-- kWh';
     _invTileSet('invTodayPv', _todayPvText, '#f4d03f', 'label_entity_today_pv');
-    const totalPvW = totalPvSensor !== null && !isNaN(totalPvSensor) ? totalPvSensor : null;
-    setText('invTotalPv', totalPvW !== null ? totalPvW.toFixed(0) + ' W' : '-- W');
-    // CHG / DIS — charge + discharge
+    setText('invTotalPv', _energyText(this.config.total_pv));
+    // Battery — TODAY charge/discharge (Row 2 tile) + cumulative TOTAL charge/discharge (PV strip)
     const _chgText = _todayBattChgRaw !== null ? ' ' + todayBattChg.toFixed(1) + ' kWh' : '-- kWh';
     _invTileSet('invTodayBattChg', _chgText, '#3fb950', 'label_entity_chg_dis');
     setText('invTodayBattDis', battDis1Raw !== null ? ' ' + battDis1.toFixed(1) + ' kWh' : '-- kWh');
-    // TODAY LOAD — main value + current consumption
+    setText('invTotalBattChg', _energyText(this.config.total_batt_chg));
+    setText('invTotalBattDis', _energyText(this.config.total_batt_dis));
+    // TODAY LOAD — today total + cumulative Total Load (from the dedicated total_load sensor)
     const _loadText = _todayLoadRaw !== null ? ' ' + todayLoad.toFixed(1) + ' kWh' : '-- kWh';
     _invTileSet('invTodayLoad', _loadText, '#29b6f6', 'label_entity_today_load');
-    const totalLoadVal = this._val(this.config.total_load_entity, true);
-    const totalLoadW = totalLoadVal !== null && totalLoadVal > 0 ? totalLoadVal : null;
-    setText('invConsump', totalLoadW !== null ? totalLoadW.toFixed(0) + ' W' : '-- W');
+    setText('invTotalLoad', _energyText(this.config.total_load_entity));
     // Grid Import — main value + grid export
     const _gridImportEntityId = this.config.grid_import_today || 'sensor.goodwe_today_energy_import';
     const _gridImportStateObj = this._hass && this._hass.states[_gridImportEntityId];
@@ -3491,6 +3525,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.17',
+  version: '2.6.18',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
