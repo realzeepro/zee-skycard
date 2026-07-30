@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.16
+// zee-skycard.js – Sky Edition v2.6.17
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -628,7 +628,7 @@ class ZeeSkyCardEditor extends HTMLElement {
       picker('consump',    'House Consumption'),
       divider(),
       picker('today_batt_chg', 'Today Batt Charge'),
-      picker('today_batt_dis',   'Today Battery Discharge', true),
+      picker('batt_dis',       'Today Batt Discharge', true),
       picker('today_pv',       'Today PV Generation'),
       picker('total_pv',       'Total PV Generation'),
       picker('today_load', 'Today Load (tile 4)', true),
@@ -1037,7 +1037,7 @@ class ZeeSkyCard extends HTMLElement {
       pv4_voltage: '',
       // Grid import today
       grid_import_today: 'sensor.goodwe_today_energy_import',
-      grid_export_today: '',
+      grid_export_today: 'sensor.goodwe_today_energy_export',
       grid_power_alt: 'sensor.grid_phase_a_power',
       grid_voltage: '',
       _show_3phase: false,
@@ -1207,13 +1207,13 @@ class ZeeSkyCard extends HTMLElement {
     return 'Till ' + day + ' ' + hr + ':' + target.getMinutes().toString().padStart(2,'0') + ' ' + ampm;
   }
   _fmtDuration(sec) {
+    // Compact zero-padded uptime: e.g. "03D 05H 09M"
+    sec = Math.max(0, Math.floor(sec));
     const days = Math.floor(sec / 86400);
     const hrs = Math.floor((sec % 86400) / 3600);
     const mins = Math.floor((sec % 3600) / 60);
-    if (days > 0) return days + ' Day' + (days !== 1 ? 's' : '') + ' ' + hrs + ' Hour' + (hrs !== 1 ? 's' : '');
-    if (hrs > 0) return hrs + ' Hour' + (hrs !== 1 ? 's' : '') + ' ' + mins + ' Minute' + (mins !== 1 ? 's' : '');
-    if (mins > 0) return mins + ' Minute' + (mins !== 1 ? 's' : '');
-    return 'Less than a minute';
+    const p = n => String(n).padStart(2, '0');
+    return p(days) + 'D ' + p(hrs) + 'H ' + p(mins) + 'M';
   }
   _fmtUptime(raw) {
     if (!raw) return '--';
@@ -1563,24 +1563,29 @@ class ZeeSkyCard extends HTMLElement {
       const tt = val !== null ? val + ' ' + unit : '-- ' + unit;
       const pct = val !== null ? Math.max(0, Math.min(100, ((val - min) / (max - min || 1)) * 100)) : 0;
       const svc = entityId ? `host._hass.callService('number','set_value',{entity_id:'${entityId}',value:parseFloat(this.value)});` : '';
-      return `<div style="position:relative;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px;margin-bottom:8px">
+      // Range input is confined to the track bar only (not the whole row), so
+      // clicking the icon/label/value area no longer changes the value — only
+      // clicking inside the bar or dragging the thumb does. A ±9px vertical
+      // overhang keeps the thin 4px bar easy to hit and drag.
+      return `<div data-sl-row style="position:relative;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px;margin-bottom:8px">
         <span style="flex-shrink:0;font-size:.85rem;line-height:1">${icon}</span>
         <span style="flex-shrink:0;font-size:.72rem;color:rgba(200,215,235,0.7);max-width:38%">${label}</span>
         <div style="flex:1;display:flex;align-items:center;gap:6px">
-          <div style="flex:1;position:relative;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;cursor:pointer">
+          <div style="flex:1;position:relative;height:4px;background:rgba(255,255,255,0.08);border-radius:2px">
             <div style="width:${pct}%;height:100%;background:#f39c4b;border-radius:2px;transition:width .1s" class="sl-fill"></div>
             <div style="position:absolute;top:50%;left:${pct}%;width:14px;height:14px;background:#fff;border:2px solid #f39c4b;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.3);transition:left .1s" class="sl-thumb"></div>
+            <input type="range" min="${min}" max="${max}" step="${step}" value="${vv}" style="position:absolute;left:0;right:0;top:-9px;height:22px;margin:0;opacity:0;cursor:pointer" oninput="
+              const p=((this.value-${min})/(${max}-${min}||1))*100;
+              const row=this.closest('[data-sl-row]');
+              const host=this.closest('[data-host]')._cardHost;
+              row.querySelector('.sl-fill').style.width=p+'%';
+              row.querySelector('.sl-thumb').style.left=p+'%';
+              row.querySelector('.sl-val').textContent=this.value+' ${unit}';
+              ${svc}">
           </div>
           <span style="font-size:.78rem;font-weight:600;color:#e0e8f0;flex-shrink:0;min-width:44px;text-align:right" class="sl-val">${tt}</span>
         </div>
-        <input type="range" min="${min}" max="${max}" step="${step}" value="${vv}" style="position:absolute;left:0;right:0;top:0;bottom:0;width:100%;height:100%;opacity:0;cursor:pointer" oninput="
-          const p=((this.value-${min})/(${max}-${min}||1))*100;
-          const c=this.parentElement;
-          const host=this.closest('[data-host]')._cardHost;
-          c.querySelector('.sl-fill').style.width=p+'%';
-          c.querySelector('.sl-thumb').style.left=p+'%';
-          c.querySelector('.sl-val').textContent=this.value+' ${unit}';
-          ${svc}"></div>`;
+      </div>`;
     };
     const statsItems = [
       this._popupEntityItem('Inverter Temp', invT !== null ? invT + ' °C' : '--', this.config.inv_temp, '#e0e8f0'),
@@ -2098,7 +2103,7 @@ class ZeeSkyCard extends HTMLElement {
         </div>
       </div>
 
-      <!-- Row 2: CELL VOLT | REMAINING | TODAY LOAD -->
+      <!-- Row 2: CELL VOLT | REMAINING | TODAY Battery CHG / DIS -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
         <div class="st">
           <div style="min-width:0;width:100%">
@@ -2131,10 +2136,12 @@ class ZeeSkyCard extends HTMLElement {
         </div>
         <div class="st">
           <div style="display:flex;align-items:center;gap:7px">
-            <span style="font-size:1.0rem;line-height:1;flex-shrink:0">🏡</span>
+            <span style="font-size:1.0rem;line-height:1;flex-shrink:0">🔋</span>
             <div style="min-width:0">
-              <div class="l">${this.config.label_today_load||'TODAY LOAD'}</div>
-              <div class="v" id="invTodayLoad" style="color:#29b6f6">-- kWh</div>
+              <div class="l">${this.config.label_today_batt_charge||'Today Batt Charge'}</div>
+              <div class="v" id="invTodayBattChg" style="color:#29b6f6">-- kWh</div>
+              <div class="l">${this.config.label_today_batt_discharge||'Today Batt Discharge'}</div>
+              <div class="v" id="invTodayBattDis" style="color:#29b6f6">-- kWh</div>
             </div>
           </div>
         </div>
@@ -2161,7 +2168,7 @@ class ZeeSkyCard extends HTMLElement {
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Today PV</span>
           <span id="invTodayPv" style="font-size:.72rem;font-weight:650;color:#f4d03f">-- kWh</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total PV</span>
-          <span id="invTotalPv" style="font-size:.72rem;font-weight:650;color:#f4d03f">-- W</span>
+          <span id="invTotalPv" style="font-size:.72rem;font-weight:650;color:#f4d03f">-- kWh</span>
         </div>
         <div class="pvi">
           <span class="ico">🔋</span>
@@ -2178,11 +2185,11 @@ class ZeeSkyCard extends HTMLElement {
           <span id="invGridExport" style="font-size:.72rem;font-weight:650;color:#4ade80">-- kWh</span>
         </div>
         <div class="pvi">
-          <span class="ico">⬆️</span>
+          <span class="ico">🏡</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Today Load</span>
           <span id="invTodayLoad" style="font-size:.72rem;font-weight:650;color:#29b6f6">-- kWh</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total Load</span>
-          <span id="invConsump" style="font-size:.72rem;font-weight:650;color:#e0e8f0">-- W</span>
+          <span id="invTotalLoad" style="font-size:.72rem;font-weight:650;color:#e0e8f0">-- kWh</span>
         </div>
       </div>
 
@@ -3484,6 +3491,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.16',
+  version: '2.6.17',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
