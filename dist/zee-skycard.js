@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.2
+// zee-skycard.js – Sky Edition v2.9.3
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1768,6 +1768,8 @@ class ZeeSkyCard extends HTMLElement {
     const sw = st?.attributes?.swing_mode || '';
     const on = hv === 'heat' || hv === 'cool' || hv === 'heat_cool' || hv === 'auto' || hv === 'fan_only' || hv === 'dry';
     const modes = ['off','cool','heat','auto','fan_only','dry'];
+    const modeIcon = { off:'⏻', cool:'❄️', heat:'🔥', auto:'🔄', fan_only:'🌀', dry:'💧' };
+    const _ml = (m) => String(m).replace(/_/g,' ').toUpperCase();
     const fans = st?.attributes?.fan_modes || [];
     const swings = st?.attributes?.swing_modes || [];
     const tv = t !== null && !isNaN(t) ? t : 24;
@@ -1787,10 +1789,10 @@ class ZeeSkyCard extends HTMLElement {
           </div>
           <span style="display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;border:1px solid rgba(255,255,255,0.12);background:${on ? '#03a9f4' : 'rgba(255,255,255,0.05)'};border-color:${on ? '#03a9f4' : 'rgba(255,255,255,0.12)'};color:${on ? '#fff' : '#c9d1d9'}" onclick="const o=this.closest('[data-host]')._cardHost;if(o&&o._hass)o._hass.callService('climate','toggle',{entity_id:'${eid}'});this.style.background=this.style.background==='rgb(3, 169, 244)'?'rgba(255,255,255,0.05)':'#03a9f4';this.style.color=this.style.color==='rgb(255, 255, 255)'?'#c9d1d9':'#fff';this.style.borderColor=this.style.borderColor==='rgb(3, 169, 244)'?'rgba(255,255,255,0.12)':'#03a9f4';this.textContent=this.textContent==='✓ ON'?'OFF':'✓ ON'">${on ? '✓ ON' : 'OFF'}</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr ${hu !== null && !isNaN(hu) ? '1fr' : '1fr'};gap:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
           ${metric('🌡️', 'Current', ct !== null && !isNaN(ct) ? ct.toFixed(1) + ' °C' : '-- °C', '#29b6f6')}
           ${metric('🎚️', 'Set', tv.toFixed(1) + ' °C', '#f39c4b')}
-          ${hu !== null && !isNaN(hu) ? metric('💧', 'Humidity', hu.toFixed(0) + ' %', '#4ade80') : ''}
+          ${metric('💧', 'Humidity', hu !== null && !isNaN(hu) ? hu.toFixed(0) + ' %' : '-- %', hu !== null && !isNaN(hu) ? '#4ade80' : '#8b949e')}
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:12px">
           <button style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="
@@ -1804,17 +1806,19 @@ class ZeeSkyCard extends HTMLElement {
             this.previousElementSibling.textContent=(${(tv+1).toFixed(1)})+'°C'">+</button>
         </div>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px">${
-        modes.map(m => chip(m.replace('_',' '), hv === m,
-          `const o=this.closest('[data-host]')._cardHost;if(o&&o._hass)o._hass.callService('climate','set_hvac_mode',{entity_id:'${eid}',hvac_mode:'${m}'});this.parentElement.querySelectorAll('[data-chip]').forEach(c=>c.style.background='rgba(255,255,255,0.05)');this.style.background='#03a9f4';this.style.color='#fff';this.style.borderColor='#03a9f4'`)).join('')
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px">${
+        modes.map(m => {
+          const _a = hv === m;
+          return `<div data-chip style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 4px;border-radius:10px;cursor:pointer;user-select:none;transition:all .15s;border:1px solid ${_a ? '#03a9f4' : 'rgba(255,255,255,0.12)'};background:${_a ? '#03a9f4' : 'rgba(255,255,255,0.05)'};color:${_a ? '#fff' : '#c9d1d9'}" onclick="const o=this.closest('[data-host]')._cardHost;if(o&&o._hass)o._hass.callService('climate','set_hvac_mode',{entity_id:'${eid}',hvac_mode:'${m}'});this.parentElement.querySelectorAll('[data-chip]').forEach(c=>{c.style.background='rgba(255,255,255,0.05)';c.style.color='#c9d1d9';c.style.borderColor='rgba(255,255,255,0.12)'});this.style.background='#03a9f4';this.style.color='#fff';this.style.borderColor='#03a9f4'"><span style="font-size:1rem;line-height:1">${modeIcon[m] || '⚙️'}</span><span style="font-size:.58rem;font-weight:700;letter-spacing:.5px">${_ml(m)}</span></div>`;
+        }).join('')
       }</div>${
         fans.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px"><span style="font-size:.6rem;color:rgba(200,215,235,0.4);letter-spacing:1px;text-transform:uppercase;width:100%;text-align:center;margin-bottom:2px">Fan</span>${
-          fans.map(f => chip(f, fm === f,
+          fans.map(f => chip(_ml(f), fm === f,
             `const o=this.closest('[data-host]')._cardHost;if(o&&o._hass)o._hass.callService('climate','set_fan_mode',{entity_id:'${eid}',fan_mode:'${f}'});this.parentElement.querySelectorAll('[data-chip]').forEach(c=>c.style.background='rgba(255,255,255,0.05)');this.style.background='#03a9f4';this.style.color='#fff';this.style.borderColor='#03a9f4'`)).join('')
         }</div>` : ''
       }${
         swings.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px"><span style="font-size:.6rem;color:rgba(200,215,235,0.4);letter-spacing:1px;text-transform:uppercase;width:100%;text-align:center;margin-bottom:2px">Swing</span>${
-          swings.map(s => chip(s, sw === s,
+          swings.map(s => chip(_ml(s), sw === s,
             `const o=this.closest('[data-host]')._cardHost;if(o&&o._hass)o._hass.callService('climate','set_swing_mode',{entity_id:'${eid}',swing_mode:'${s}'});this.parentElement.querySelectorAll('[data-chip]').forEach(c=>c.style.background='rgba(255,255,255,0.05)');this.style.background='#03a9f4';this.style.color='#fff';this.style.borderColor='#03a9f4'`)).join('')
         }</div>` : ''
       }`);
@@ -3666,6 +3670,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.2',
+  version: '2.9.3',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
