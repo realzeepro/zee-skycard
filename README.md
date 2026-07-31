@@ -2,11 +2,11 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.8.1**
+`zee-skycard.js` · Sky Edition **v2.8.2**
 <img width="1419" height="2405" alt="Screenshot_2026-06-02-11-05-46-70_cbf47468f7ecfbd8ebcc46bf9cc626da" src="https://github.com/user-attachments/assets/9300fcb5-4b67-4eb7-8099-02701e8a5890" />
 
 
-> **Origin:** `zee-skycard` is a full visual overhaul of [`khan-skycard`](https://github.com/thekhan1122/khan-skycard) by [thekhan1122](https://github.com/thekhan1122), and lives in its own separate repository. It shares the same entity schema and visual editor but replaces the entire SVG canvas with a photographic background system and redesigned celestial / inverter visuals.
+> **Origin:** `zee-skycard` is forked from [`khan-skycard`](https://github.com/thekhan1122/khan-skycard) by [thekhan1122](https://github.com/thekhan1122) and has been updated and customized for **Zee's Home** setup. It lives in its own separate repository, replacing the entire SVG canvas with a photographic background system and redesigned celestial / inverter visuals.
 
 ---
 
@@ -19,9 +19,9 @@ The card is self-contained in a single JavaScript file — no NPM, no build step
 
 ---
 
-## What Changed from k-flow-card
+## What Changed from khan-skycard
 
-| Area | k-flow-card | zee-skycard (Sky Edition) |
+| Area | khan-skycard | zee-skycard (Sky Edition) |
 |---|---|---|
 | **Background** | Dark SVG canvas | Full-card photographic PNG (13 variants) |
 | **Grid pylon** | SVG icon, right side | Photo composition, left side |
@@ -52,7 +52,7 @@ Paste your repository URL:
    https://github.com/realzeepro/zee-skycard
 
 Set category to Lovelace and click Add.
-Search for k-flow-card and click Download.
+Search for zee-skycard and click Download.
 HACS automatically downloads the card and all icon files into /config/www/community/zee-skycardcard/. No manual file copying needed.
 Hard-refresh your browser (Ctrl + Shift + R / Cmd + Shift + R).
 
@@ -338,10 +338,9 @@ zee-skycard.js
 
 ## Credits
 
-This project is a fork and full visual overhaul of:
+This project is forked from:
 
-- **[khan-skycard](https://github.com/thekhan1122/khan-skycard)** by [thekhan1122](https://github.com/thekhan1122) — the original card this project builds on (entity schema, visual editor, and base design).
-- **[k-flow-card](https://github.com/realzeepro/k-flow-card)** — upstream entity schema and editor lineage.
+- **[khan-skycard](https://github.com/thekhan1122/khan-skycard)** by [thekhan1122](https://github.com/thekhan1122) — the original card this project builds on (entity schema, visual editor, and base design), updated and customized for Zee's Home setup.
 
 Huge thanks to the original author for the foundation.
 
@@ -351,7 +350,7 @@ Huge thanks to the original author for the foundation.
 
 ### v1.0.0-pre *(this release)*
 
-Full visual overhaul of `k-flow-card` v1.1.x. Forked into a separate repository as **zee-skycard — Sky Edition**.
+Full visual overhaul of `khan-skycard`. Forked into a separate repository as **zee-skycard — Sky Edition**.
 
 **Background & layout**
 - Full-card photographic PNG background system — 13 images covering weather condition × time of day.
@@ -409,7 +408,7 @@ Full visual overhaul of `k-flow-card` v1.1.x. Forked into a separate repository 
 ### Visual editor is blank or fails to load
 
 - Open browser DevTools (`F12`) → Console tab. Look for any red errors referencing `zee-skycard`.
-- Ensure no stale `k-flow-card` or duplicate `zee-skycard` resource entry exists. Remove any duplicates under **Settings → Dashboards → Resources**.
+- Ensure no stale or duplicate `zee-skycard` resource entry exists. Remove any duplicates under **Settings → Dashboards → Resources**.
 
 ---
 
@@ -461,4 +460,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.8.1*
+*Zee Energy · zee-skycard · Sky Edition v2.8.2*

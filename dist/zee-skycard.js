@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.8.1
+// zee-skycard.js – Sky Edition v2.8.2
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1899,14 +1899,14 @@ class ZeeSkyCard extends HTMLElement {
             <rect id="battFillHL2"  x="85" y="269" width="30" height="0" rx="0" fill="url(#battFillHighlight)" clip-path="url(#battBodyClipRight)" style="pointer-events:none"/>
             <g id="battBoltGroup1" opacity="0"><polygon points="72,176 64,195 70,195 66,215 78,193 72,193 80,176" fill="#1a4aff" stroke="rgba(100,150,255,.5)" stroke-width="0.8" filter="url(#battGlowBolt)"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.0s" repeatCount="indefinite"/></polygon></g>
             <g id="battBoltGroup2" opacity="0"><polygon points="104,176 96,195 102,195 98,215 110,193 104,193 112,176" fill="#1a4aff" stroke="rgba(100,150,255,.5)" stroke-width="0.8" filter="url(#battGlowBolt)"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.0s" repeatCount="indefinite"/></polygon></g>
-            <text id="fcBattVal1" x="68"  y="210" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">--%</text>
-            <text id="fcBattVal2" x="100" y="210" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">--%</text>
+            <text id="fcBattVal1" x="68"  y="210" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" stroke="rgba(0,0,0,0.65)" stroke-width="2" paint-order="stroke">--%</text>
+            <text id="fcBattVal2" x="100" y="210" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" stroke="rgba(0,0,0,0.65)" stroke-width="2" paint-order="stroke">--%</text>
           ` : `
             <rect id="battFillBar" x="53" y="269" width="62" height="0" rx="0" fill="#00f0ff" clip-path="url(#battBodyClip)"/>
             <rect id="battFillHL"  x="53" y="269" width="62" height="0" rx="0" fill="url(#battFillHighlight)" clip-path="url(#battBodyClip)" style="pointer-events:none"/>
             <g id="battBoltGroup" opacity="0"><polygon points="86,176 74,199 82,199 77,226 95,197 85,197 98,176" fill="#1a9fff" stroke="rgba(100,200,255,.6)" stroke-width="0.8" filter="url(#battGlowBolt)"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.0s" repeatCount="indefinite"/></polygon></g>
             <!-- Big bold % text – matches model image -->
-            <text id="fcBattVal" x="84" y="215" text-anchor="middle" font-size="19" font-weight="800" fill="#fff">--%</text>
+            <text id="fcBattVal" x="84" y="215" text-anchor="middle" font-size="19" font-weight="800" fill="#fff" stroke="rgba(0,0,0,0.65)" stroke-width="2" paint-order="stroke">--%</text>
           `) +
       `</g>
       </g>`
@@ -3643,6 +3643,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.8.1',
+  version: '2.8.2',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
