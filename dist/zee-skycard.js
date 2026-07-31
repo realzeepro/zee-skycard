@@ -2137,9 +2137,12 @@ class ZeeSkyCard extends HTMLElement {
       <line x1="182" y1="405" x2="182" y2="430" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
       <line x1="327" y1="405" x2="327" y2="430" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
 
-      <!-- GRID col — power + voltage shown on the flow line above; frequency here -->
+      <!-- GRID col — single power+volt by default; L1/L2/L3 sub-values when 3-phase enabled -->
       <text x="75" y="400" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">GRID</text>
-      <text id="fcGridFreqVal" x="75" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- Hz</text>
+      <!-- Default: power (left) + voltage (right) side-by-side on one baseline -->
+      <text id="fcGridVal" x="45" y="421" text-anchor="middle" font-size="15" font-weight="650" fill="#e0e8f0">0 W</text>
+      <text id="fcGridVoltVal" x="112" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
+      <text id="fcGridFreqVal" x="150" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- Hz</text>
       <!-- 3-phase sub-row: L1 | L2 | L3 — hidden by default, shown when _show_3phase enabled -->
       <g id="grid3PhaseVertical" display="none">
         <!-- L1 -->
@@ -3067,33 +3070,34 @@ class ZeeSkyCard extends HTMLElement {
     }
 
     // Grid flow labels — power above flowGridIn, voltage below (mirrors the battery flow)
-    const gridFcEl    = getEl('fcGridFlowVal');
-    const gridVoltEl  = getEl('fcGridFlowVolt');
+    // Bottom GRID column shows the same single power + voltage (fcGridVal / fcGridVoltVal).
     const phase3Group = getEl('grid3PhaseVertical');
     const _show3ph    = !!(this.config._show_3phase);
-
-    // Single total power value
-    if (gridFcEl) {
+    const _setGridPower = (el) => {
+      if (!el) return;
       if (!gridIsActive) {
-        gridFcEl.setAttribute('fill', 'rgba(180,190,210,0.35)');
-        gridFcEl.textContent = '0 W';
+        el.setAttribute('fill', 'rgba(180,190,210,0.35)');
+        el.textContent = '0 W';
       } else {
-        gridFcEl.setAttribute('fill', gridCol);
-        gridFcEl.textContent = gridDir + gridTxtFmt;
+        el.setAttribute('fill', gridCol);
+        el.textContent = gridDir + gridTxtFmt;
       }
-      // Hide single values when 3-phase is active (L1/L2/L3 take over)
-      gridFcEl.setAttribute('opacity', _show3ph ? '0' : '1');
-    }
-    // Single grid voltage (default visible, hidden in 3-phase mode)
-    if (gridVoltEl) {
+      el.setAttribute('opacity', _show3ph ? '0' : '1');
+    };
+    const _setGridVolt = (el) => {
+      if (!el) return;
       const _gvEntityId = this.config.grid_voltage || '';
       const _gvState = _gvEntityId && this._hass?.states[_gvEntityId];
       const _gvVal = _gvState && _gvState.state !== 'unavailable' && _gvState.state !== 'unknown'
         ? parseFloat(_gvState.state) : null;
-      gridVoltEl.textContent = (_gvVal !== null && !isNaN(_gvVal)) ? _gvVal.toFixed(0) + ' V' : '-- V';
-      gridVoltEl.setAttribute('fill', gridIsActive ? 'rgba(200,220,255,0.75)' : 'rgba(180,190,210,0.35)');
-      gridVoltEl.setAttribute('opacity', _show3ph ? '0' : '1');
-    }
+      el.textContent = (_gvVal !== null && !isNaN(_gvVal)) ? _gvVal.toFixed(0) + ' V' : '-- V';
+      el.setAttribute('fill', gridIsActive ? 'rgba(200,220,255,0.75)' : 'rgba(180,190,210,0.35)');
+      el.setAttribute('opacity', _show3ph ? '0' : '1');
+    };
+    _setGridPower(getEl('fcGridVal'));
+    _setGridPower(getEl('fcGridFlowVal'));
+    _setGridVolt(getEl('fcGridVoltVal'));
+    _setGridVolt(getEl('fcGridFlowVolt'));
     // Grid frequency (next to grid voltage)
     const gridFreqEl = getEl('fcGridFreqVal');
     if (gridFreqEl) {
