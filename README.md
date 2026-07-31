@@ -4,7 +4,9 @@
 
 `zee-skycard.js` · Sky Edition **v2.9.4**
 
-<img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-skycard.png" alt="Zee Skycard">
+<img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-skycard.png" alt="Zee Skycard">
+
+<img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/Screenshot-skycard-rainy.png" alt="Zee Skycard rainy">
 
 
 > **Origin:** `zee-skycard` is forked from [`khan-skycard`](https://github.com/thekhan1122/khan-skycard) by [thekhan1122](https://github.com/thekhan1122) and has been updated and customized for **Zee's Home** setup. It lives in its own separate repository, replacing the entire SVG canvas with a photographic background system and redesigned celestial / inverter visuals.
@@ -19,27 +21,6 @@ jor weather condition and time-of-day combination — the card selects the corre
 The card is self-contained in a single JavaScript file — no NPM, no build step, no additional dependencies.
 
 **Works with any inverter, battery, and sensors.** Every entity is mapped through the visual editor, so the card is not tied to one brand — GoodWe, Deye, Solis, LuxPower, Victron, JK BMS, Daly BMS, generic Home Assistant sensors, and more are all supported. Power sensors are auto-detected in W or kW, energy totals in Wh, kWh or MWh, and temperatures in °C or °F. Solar strings and monitoring sections are optional and simply hide their tiles when left empty.
-
----
-
-## What Changed from khan-skycard
-
-| Area | khan-skycard | zee-skycard (Sky Edition) |
-|---|---|---|
-| **Background** | Dark SVG canvas | Full-card photographic PNG (13 variants) |
-| **Grid pylon** | SVG icon, right side | Photo composition, left side |
-| **House** | SVG icon overlay | Part of photo — overlay removed |
-| **Inverter node** | Large labelled box | Tiny amber-bordered pill badge (64 × 22 px) at photo centre |
-| **INV info banner** | Inline in box | Floating glassmorphism panel above badge (name · TEMP · LOAD %) |
-| **Battery position** | Left side | Right side (mirrored) |
-| **Battery visual** | Cylinder from photo | SVG fill-bar with SOC %, voltage (cylinder removed from photo) |
-| **Sun** | Arc-tracked SVG circle | Free-floating photorealistic orb — atmospheric halo, corona rays, colour-shift horizon→zenith |
-| **Moon** | Simple crescent | SVG mask crescent — earthshine glow, surface gradient, 6 craters, limb brightening |
-| **Arc / horizon line** | Present | Removed — celestial bodies move freely |
-| **PV blocks** | Proportional segments | Flat uniform-height coloured segments (green → cyan → yellow) |
-| **PWR bar** | Rounded | Square-cornered with live % label, colour blue → orange |
-| **Flow paths** | Routed to large INV box | Rerouted to tiny badge; grid + battery converge at y=320; load drops vertically from y=430 |
-
 
 ---
 
@@ -243,6 +224,12 @@ All keys are configured through the visual editor. YAML equivalents are listed b
 
 Clickable stat tiles open popup dialogs for a closer look at live data.
 
+### Inverter ⚡
+
+Click the inverter tile to open the inverter popup: **Error** status, **Inverter Temp**, **Rad Temp**, **Total Hours**, and **Mode** — plus **DoD On-grid**, **DoD Off-grid**, and **Export Limit** sliders that write back to the inverter when the matching entities are set.
+
+![Inverter popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-inverter-popup.png)
+
 ### Cameras 📷
 
 Enable the **Cameras** section to show up to 4 live camera feeds (2×2 grid).
@@ -264,6 +251,20 @@ The battery popup shows full BMS telemetry, ordered: **Battery Status → SOC �
 
 The **Current (A)** entry sits right after **Power (W)** and reads `battery_current`, falling back to `goodwe_battery_curr` when set.
 
+![Battery popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-battery-popup.png)
+
+### Smart Plugs 🔌
+
+Enable the **Smart Plugs** section to toggle up to 2 plugs on/off and see each plug's live **Power**, **Voltage**, and **Current**.
+
+![Smart plugs popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-smart-plugs-popup.png)
+
+### Climate ❄️
+
+Enable the **Climate** section to adjust the temperature and switch AC modes (heat/cool/dry/fan/auto) from the popup.
+
+![AC popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-ac-popup.png)
+
 ### Rooms 🏠
 
 Enable the **Room Sensors** section to show room temperature cards (2 rooms). Each card shows the **room name**, **Temperature (°C)**, **Humidity (%)**, and the sensor **Battery (%)** chip in the header.
@@ -278,9 +279,11 @@ Enable the **Room Sensors** section to show room temperature cards (2 rooms). Ea
 
 Temperature colour follows the threshold system; the battery chip turns orange ≤40% and red ≤20%.
 
+![Rooms popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-rooms-popup.png)
+
 ### Others
 
-The **System**, **Smart Plugs**, and **Climate** popups open from their respective monitoring tiles when enabled.
+The **System** popup opens from its monitoring tile when enabled.
 
 ---
 
@@ -297,10 +300,6 @@ The **System**, **Smart Plugs**, and **Climate** popups open from their respecti
 ---
 
 ## File Structure
-
-![Inverter popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-inverter-popup.png)
-
-![Smart plugs popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-smart-plugs-popup.png)
 
 ```
 /config/www/community/zee-skycard/
