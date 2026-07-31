@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.18
+// zee-skycard.js – Sky Edition v2.6.19
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -579,6 +579,7 @@ class ZeeSkyCardEditor extends HTMLElement {
       divider(),
       picker('grid_active_power',  'Grid Active Power'),
       picker('grid_voltage',       'Grid Voltage', true),
+      picker('grid_frequency',     'Grid Frequency', true),
       divider(),
       makeSection('grid3phase', '⚡', '3-Phase Breakdown', [
         picker('grid_phase_a', 'Phase L1 Power', true),
@@ -1020,6 +1021,8 @@ class ZeeSkyCard extends HTMLElement {
       label_grid_import: 'GRID IMPORT',
       label_grid_export: 'GRID EXPORT',
       label_today_load: 'TODAY LOAD',
+      label_today_batt_charge: 'CHARGE',
+      label_today_batt_discharge: 'DISCHARGE',
       // Custom entity overrides for 6 stat tiles
       label_entity_cell_temp: '',
       label_entity_bms_temp: '',
@@ -1043,6 +1046,7 @@ class ZeeSkyCard extends HTMLElement {
       grid_export_today: 'sensor.goodwe_today_energy_export',
       grid_power_alt: 'sensor.grid_phase_a_power',
       grid_voltage: '',
+      grid_frequency: '',
       load_voltage: '',
       _show_3phase: false,
       grid_phase_a: '',
@@ -1864,7 +1868,7 @@ class ZeeSkyCard extends HTMLElement {
     <div class="kfc-shell" id="kfcShell">
       <div id="kfcSkyDiv" aria-hidden="true"></div>
       <div id="kfcBottomGrad" style="position:absolute;top:58%;left:0;right:0;bottom:0;pointer-events:none;z-index:0;border-radius:0 0 14px 14px;transition:background 1.4s ease"></div>
-      <div class="kfc-content" style="transform:translateY(-6%)">
+      <div class="kfc-content" style="transform:translateY(-4%)">
       <div class="ct">&#x2014; Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
       <div style="width:100%"><svg id="flowSvg" viewBox="0 0 520 465" style="width:100%;display:block">
       <defs>
@@ -2021,6 +2025,7 @@ class ZeeSkyCard extends HTMLElement {
       <!-- Default: power (left) + voltage (right) side-by-side on one baseline -->
       <text id="fcGridVal" x="45" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">0 W</text>
       <text id="fcGridVoltVal" x="112" y="421" text-anchor="middle" font-size="9" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
+      <text id="fcGridFreqVal" x="150" y="421" text-anchor="middle" font-size="9" font-weight="400" fill="rgba(180,200,230,0.45)">-- Hz</text>
       <!-- 3-phase sub-row: L1 | L2 | L3 — hidden by default, shown when _show_3phase enabled -->
       <g id="grid3PhaseVertical" display="none">
         <!-- L1 -->
@@ -2153,9 +2158,9 @@ class ZeeSkyCard extends HTMLElement {
           <div style="display:flex;align-items:center;gap:7px">
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">🔋</span>
             <div style="min-width:0">
-              <div class="l">${this.config.label_today_batt_charge||'Batt Charge'}</div>
+              <div class="l">${this.config.label_today_batt_charge||'Charge'}</div>
               <div class="v" id="invTodayBattChg" style="color:#29b6f6">-- kWh</div>
-              <div class="l">${this.config.label_today_batt_discharge||'Batt Discharge'}</div>
+              <div class="l">${this.config.label_today_batt_discharge||'Discharge'}</div>
               <div class="v" id="invTodayBattDis" style="color:#29b6f6">-- kWh</div>
             </div>
           </div>
@@ -2965,6 +2970,17 @@ class ZeeSkyCard extends HTMLElement {
       gridVoltEl.setAttribute('fill', gridIsActive ? 'rgba(200,220,255,0.75)' : 'rgba(180,190,210,0.35)');
       gridVoltEl.setAttribute('opacity', _show3ph ? '0' : '1');
     }
+    // Grid frequency (next to grid voltage)
+    const gridFreqEl = getEl('fcGridFreqVal');
+    if (gridFreqEl) {
+      const _gfEntityId = this.config.grid_frequency || '';
+      const _gfState = _gfEntityId && this._hass?.states[_gfEntityId];
+      const _gfVal = _gfState && _gfState.state !== 'unavailable' && _gfState.state !== 'unknown'
+        ? parseFloat(_gfState.state) : null;
+      gridFreqEl.textContent = (_gfVal !== null && !isNaN(_gfVal)) ? _gfVal.toFixed(2) + ' Hz' : '-- Hz';
+      gridFreqEl.setAttribute('fill', gridIsActive ? 'rgba(200,220,255,0.75)' : 'rgba(180,190,210,0.35)');
+      gridFreqEl.setAttribute('opacity', _show3ph ? '0' : '1');
+    }
     // ── 3-phase sub-row (like PV1/PV2) ──
     if (phase3Group) {
       if (_show3ph) {
@@ -3525,6 +3541,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.18',
+  version: '2.6.19',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
