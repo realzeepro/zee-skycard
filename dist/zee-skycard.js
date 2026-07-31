@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.7.0
+// zee-skycard.js – Sky Edition v2.7.1
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -2193,6 +2193,7 @@ class ZeeSkyCard extends HTMLElement {
           </div>
           <div style="display:flex;align-items:center;gap:14px">
             <span class="v" id="bEnduranceStat" style="color:#3ce878">--</span>
+            <span id="bEndurancePower" style="font-size:.68rem;font-weight:500;color:rgba(160,185,220,0.85);white-space:nowrap"></span>
             <span id="bEnduranceTime" style="font-size:.62rem;font-weight:400;color:rgba(160,185,220,0.60);letter-spacing:.4px;white-space:nowrap">Till --</span>
           </div>
         </div>
@@ -3399,8 +3400,18 @@ class ZeeSkyCard extends HTMLElement {
       _applyTileSize(_bEnduStat, 'val_endurance_size');
     }
     const _bEnduStatLbl = getEl('bEnduStatLbl');
+    const _bEnduPwrEl = getEl('bEndurancePower');
     if (_bEnduStatLbl) {
-      _bEnduStatLbl.textContent = isETA ? 'ETA' : (this.config.label_endurance || 'ENDURANCE');
+      if (isCharging1) {
+        _bEnduStatLbl.textContent = 'Will be Charged';
+        if (_bEnduPwrEl) _bEnduPwrEl.textContent = '@ ' + battPwr1.toFixed(0) + ' W';
+      } else if (battPwr1 < -10) {
+        _bEnduStatLbl.textContent = 'Will be Discharged';
+        if (_bEnduPwrEl) _bEnduPwrEl.textContent = '@ ' + Math.abs(battPwr1).toFixed(0) + ' W';
+      } else {
+        _bEnduStatLbl.textContent = this.config.label_endurance || 'ENDURANCE';
+        if (_bEnduPwrEl) _bEnduPwrEl.textContent = '';
+      }
       _applyTileSize(_bEnduStatLbl, 'label_endurance_size');
     }
     const _bEnduTimeEl = getEl('bEnduranceTime');
@@ -3558,6 +3569,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.7.0',
+  version: '2.7.1',
 });
 customElements.define('zee-skycard', ZeeSkyCard);

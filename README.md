@@ -414,6 +414,7 @@ Full visual overhaul of `k-flow-card` v1.1.x. Forked into a separate repository 
 
 - Requires `battery_full_ah` (capacity in Ah) and `battery_current` to be set and returning valid values.
 - If the battery is neither charging nor discharging (current ≈ 0), `--` is shown by design.
+- The row reads **Will be Charged** / **Will be Discharged** with the time-to-full or time-to-empty, the current power (`@ 1200 W`), and the **Till** date/time at which the battery reaches full / empty.
 
 ---
 
@@ -434,4 +435,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.7.0*
+*Zee Energy · zee-skycard · Sky Edition v2.7.1*
