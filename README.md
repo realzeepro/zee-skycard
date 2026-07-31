@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.8.10**
+`zee-skycard.js` · Sky Edition **v2.9.0**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -17,6 +17,8 @@
 jor weather condition and time-of-day combination — the card selects the correct image automatically from a connected `weather` entity and the current sun elevation.
 
 The card is self-contained in a single JavaScript file — no NPM, no build step, no additional dependencies.
+
+**Works with any inverter, battery, and sensors.** Every entity is mapped through the visual editor, so the card is not tied to one brand — GoodWe, Deye, Solis, LuxPower, Victron, JK BMS, Daly BMS, generic Home Assistant sensors, and more are all supported. Power sensors are auto-detected in W or kW, energy totals in Wh, kWh or MWh, and temperatures in °C or °F. Solar strings and monitoring sections are optional and simply hide their tiles when left empty.
 
 ---
 
@@ -54,7 +56,7 @@ Paste your repository URL:
 
 Set category to Lovelace and click Add.
 Search for zee-skycard and click Download.
-HACS automatically downloads the card and all icon files into /config/www/community/zee-skycardcard/. No manual file copying needed.
+HACS automatically downloads the card and all icon files into /config/www/community/zee-skycard/. No manual file copying needed.
 Hard-refresh your browser (Ctrl + Shift + R / Cmd + Shift + R).
 
 
@@ -68,7 +70,7 @@ Go to the repository and download these files from the dist/ folder:
 zee-skycard.js
 
 
-Create the folder /config/www/community/zee-skycard/ and place all 13 files inside it.
+Create the folder /config/www/community/zee-skycard/ and place zee-skycard.js inside it. Then create a sky/ subfolder with the 13 background images (see below).
 ## Sky Images
 The card needs 13 PNG files placed at:
 
@@ -92,6 +94,20 @@ The card needs 13 PNG files placed at:
 ```
 
 All images must be **PNG** format. 
+
+---
+
+## Quick Start (5 steps)
+
+New to the card? The editor pre-fills entity pickers with *example* sensors from the author's GoodWe/JK setup — replace them with your own. Here is the fastest path to a working card:
+
+1. **Add the card** to a dashboard: click **＋ Add card → zee-skycard** (or paste a `type: custom:zee-skycard` YAML card).
+2. **Map your sensors.** Open the editor and work through **Solar** (PV1/PV2 Power), **Grid** (Grid Active Power), and **Battery** (SOC, Power, Current, Voltage). Empty pickers hide their stat — you don't need every sensor.
+3. **Set your battery capacity.** In **General → Battery Capacity** enter your pack size in Ah (or kWh). This is required for the **Remaining** and **Endurance** tiles. *Example: 314 Ah for the 16 kWh GoodWe Lynx A G3.*
+4. **Check the sign convention.** If grid/battery readings point the wrong way, use the **🔄 Invert grid/battery power sign** toggles in the Grid/Battery sections.
+5. **Pick a weather entity** (General section) so the sky background matches your conditions — optional, but recommended. Then enable any monitoring sections you want with their **+ Enable** chips (Cameras, Smart Plugs, Climate, Room Sensors, EV…).
+
+After saving, every tile should show live values. Anything still showing `--`? See [Troubleshooting](#troubleshooting).
 
 ---
 
@@ -150,11 +166,11 @@ All keys are configured through the visual editor. YAML equivalents are listed b
 | `battery_min_cell` | `sensor.jk_cellmin` | Min cell voltage |
 | `battery_max_cell` | `sensor.jk_cellmax` | Max cell voltage |
 | `batt_dis` | `sensor.goodwe_today_battery_discharge` | Today discharge (kWh) |
-| `battery_full_ah` | `314` | Battery capacity (Ah) |
-| `battery_full_wh` | `16076` | Battery capacity (Wh) |
+| `battery_full_ah` | `0` | Battery capacity (Ah) — set yours; required for Remaining/Endurance tiles |
+| `battery_full_wh` | `0` | Battery capacity (Wh) — set yours; required for Remaining/Endurance tiles |
 | `battery_cap_unit` | `ah` | Capacity unit shown in editor: `ah` or `kwh` |
-| `goodwe_battery_soc` | `sensor.goodwe_battery_state_of_charge` | Fallback SOC |
-| `goodwe_battery_curr` | `sensor.goodwe_battery_current` | Fallback current |
+| `goodwe_battery_soc` | `sensor.goodwe_battery_state_of_charge` | GoodWe-only SOC fallback — used when the primary SOC sensor is unavailable |
+| `goodwe_battery_curr` | `sensor.goodwe_battery_current` | GoodWe-only current fallback — used when the primary current sensor is unavailable |
 | `invert_battery_power` | `false` | Invert sign — enable if positive = discharging |
 
 ### Secondary Battery
@@ -386,10 +402,13 @@ Full visual overhaul of `khan-skycard`. Forked into a separate repository as **z
 ## Notes
 
 - Tested by **Zee** on a Home Assistant **Docker Container** with a **GoodWe ES Uniq 8 kW** inverter and **GoodWe Lynx A G3** battery.
+- Default entity IDs in the editor are **examples** from the author's setup — always pick your own sensors.
 - The card uses shadow DOM — theme CSS does not penetrate. All colours are hardcoded or driven by entity values.
 - Config keys prefixed with `_` (e.g. `_show_battery`) are editor-only boolean toggles stored in the card YAML.
 - Sky image selection requires a `weather_entity` to be set. Without it, the card falls back to `sky-clear-day.png`.
 - When installed manually, register as `type: module` in Resources.
+- Energy units are read from each sensor (`kWh`, `Wh`, `MWh`) and shown as-is.
+- Temperature values display in the sensor's own unit (`°C`/`°F`); the colour thresholds are °C-based (see Colour Logic).
 
 ---
 
@@ -466,4 +485,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.8.10*
+*Zee Energy · zee-skycard · Sky Edition v2.9.0*

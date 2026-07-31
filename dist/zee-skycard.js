@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.8.10
+// zee-skycard.js – Sky Edition v2.9.0
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -168,6 +168,12 @@ class ZeeSkyCardEditor extends HTMLElement {
     titleBar.innerHTML = '☰ Zee Skycard Configuration';
     shell.appendChild(titleBar);
 
+    // First-run guide banner
+    const guideBanner = document.createElement('div');
+    guideBanner.style.cssText = 'font-size:.72rem;line-height:1.55;color:var(--secondary-text-color);background:var(--secondary-background-color,rgba(0,0,0,.04));border:1px solid var(--divider-color,rgba(0,0,0,.10));border-left:3px solid var(--primary-color,#03a9f4);border-radius:7px;padding:9px 11px;margin-bottom:14px;';
+    guideBanner.innerHTML = '&#x1F4A1; <strong>Quick guide:</strong> Entity pickers are pre-filled with <em>example</em> sensors from the author\u2019s setup (GoodWe/JK) \u2014 pick <strong>your</strong> sensors in each section. Leave a picker empty to hide that stat. <strong>Battery Capacity</strong> (Ah or kWh) is required for the Remaining &amp; Endurance tiles. Sections like Cameras, Smart Plugs, Climate and Room Sensors are off by default \u2014 enable them with the <strong>+ Enable</strong> chip.';
+    shell.appendChild(guideBanner);
+
     const makeSection = (sectionId, icon, title, rows, opts = {}) => {
       if (this._sectionOpen[sectionId] === undefined) this._sectionOpen[sectionId] = (sectionId === 'general');
       const isOpen = this._sectionOpen[sectionId];
@@ -227,7 +233,7 @@ class ZeeSkyCardEditor extends HTMLElement {
       return sec;
     };
 
-    const picker = (key, label, optional = false) => {
+    const picker = (key, label, optional = false, desc = '') => {
       const wrap = document.createElement('div');
       wrap.className = 'row';
       wrap.style.marginBottom = '14px';
@@ -238,6 +244,12 @@ class ZeeSkyCardEditor extends HTMLElement {
         const sm = document.createElement('small');
         sm.textContent = 'optional';
         lbl.appendChild(sm);
+      }
+      if (desc) {
+        const d = document.createElement('div');
+        d.style.cssText = 'font-size:.66rem;color:var(--secondary-text-color);line-height:1.4;margin-top:1px;padding-left:2px;';
+        d.textContent = desc;
+        lbl.appendChild(d);
       }
       const inputWrap = document.createElement('div');
       inputWrap.className = 'row-input';
@@ -297,7 +309,7 @@ class ZeeSkyCardEditor extends HTMLElement {
     };
 
     // Number field � native input, commits on blur/Enter only (same reason as textField).
-    const numberField = (key, label, min, max, step, unit = '') => {
+    const numberField = (key, label, min, max, step, unit = '', desc = '') => {
       const wrap = document.createElement('div');
       wrap.className = 'row';
       wrap.style.marginBottom = '14px';
@@ -316,6 +328,12 @@ class ZeeSkyCardEditor extends HTMLElement {
       const lbl = document.createElement('div');
       lbl.textContent = unit ? `${label}  (${unit})` : label;
       lbl.style.cssText = `font-size:.72rem; color:var(--secondary-text-color); margin-bottom:2px; line-height:1;`;
+      if (desc) {
+        const d = document.createElement('div');
+        d.style.cssText = 'font-size:.66rem;color:var(--secondary-text-color);line-height:1.4;margin:2px 0;';
+        d.textContent = desc;
+        lbl.appendChild(d);
+      }
       const input = document.createElement('input');
       input.type = 'number';
       input.min = String(min); input.max = String(max); input.step = String(step);
@@ -423,9 +441,9 @@ class ZeeSkyCardEditor extends HTMLElement {
       outer.appendChild(radioWrap);
       // Show the relevant field
       if (battCapUnit === 'ah') {
-        outer.appendChild(numberField('battery_full_ah', 'Battery Capacity', 0, 999, 1, 'Ah'));
+        outer.appendChild(numberField('battery_full_ah', 'Battery Capacity', 0, 999, 1, 'Ah', 'Required for the Remaining & Endurance tiles. Ah mode also needs a Battery Voltage sensor.'));
       } else {
-        outer.appendChild(numberField('battery_full_wh', 'Battery Capacity', 0, 999.99, 0.01, 'kWh'));
+        outer.appendChild(numberField('battery_full_wh', 'Battery Capacity', 0, 999.99, 0.01, 'kWh', 'Required for the Remaining & Endurance tiles.'));
       }
       return outer;
     })();
@@ -444,12 +462,12 @@ class ZeeSkyCardEditor extends HTMLElement {
       divider(),
       capGroupWrap,
       divider(),
-      numberField('pv_max_power',       'PV Array Max Power',    0, 30000, 100, 'W'),
-      numberField('inverter_max_power', 'Inverter Max Power',    0, 20000, 100, 'W'),
+      numberField('pv_max_power',       'PV Array Max Power',    0, 30000, 100, 'W', 'Scales the PV block fill and animation — set near your array peak.'),
+      numberField('inverter_max_power', 'Inverter Max Power',    0, 20000, 100, 'W', 'Scales the PWR bar and inverter LOAD % — set to your inverter rating.'),
       divider(),
       numberField('lower_section_offset', 'Flow diagram vertical offset', -80, 80, 1, 'SVG units (− = up)'),
       divider(),
-      picker('weather_entity', 'Weather Entity (sky images)',    true),
+      picker('weather_entity', 'Weather Entity (sky images)',    true, 'Drives the background sky image. Without it the card falls back to sky-clear-day.'),
     ]));
 
     // ── Labels: global gate + per-row activation ──
@@ -458,8 +476,8 @@ class ZeeSkyCardEditor extends HTMLElement {
     const labelsEnabled = !!(cfg._labels_custom_entities);
 
     // Helper: entity picker that can be visually disabled
-    const pickerMaybeDisabled = (key, label, disabled = false, optional = false) => {
-      const wrap = picker(key, label, optional);
+    const pickerMaybeDisabled = (key, label, disabled = false, optional = false, desc = '') => {
+      const wrap = picker(key, label, optional, desc);
       if (disabled) {
         wrap.style.position = 'relative';
         const veil = document.createElement('div');
@@ -559,16 +577,16 @@ class ZeeSkyCardEditor extends HTMLElement {
     // ── Section order: General, Solar, Grid, Battery(+secondary), Inverter, Solar Extras, EV, Customize, Typography, Thresholds ──
 
     shell.appendChild(makeSection('solar', '☀️', 'Solar', [
-      picker('pv1_power', 'PV1 Power'),
-      picker('pv2_power', 'PV2 Power'),
-      picker('pv_total_power', 'Total PV Power', true),
+      picker('pv1_power', 'PV1 Power', false, 'String 1 generation, in watts.'),
+      picker('pv2_power', 'PV2 Power', false, 'String 2 generation, in watts.'),
+      picker('pv_total_power', 'Total PV Power', true, 'Optional — falls back to the sum of PV1 + PV2 (+ PV3 + PV4).'),
       divider(),
-      pickerMaybeDisabled('pv1_voltage', 'PV1 Voltage', pvVoltLocked, true),
-      pickerMaybeDisabled('pv2_voltage', 'PV2 Voltage', pvVoltLocked, true),
+      pickerMaybeDisabled('pv1_voltage', 'PV1 Voltage', pvVoltLocked, true, 'String 1 voltage (V).'),
+      pickerMaybeDisabled('pv2_voltage', 'PV2 Voltage', pvVoltLocked, true, 'String 2 voltage (V).'),
       divider(),
       makeSection('solar_extra', '➕', 'Extra PV Strings', [
-        picker('pv3_power', 'PV3 Power', true),
-        picker('pv4_power', 'PV4 Power', true),
+        picker('pv3_power', 'PV3 Power', true, 'String 3 generation, in watts.'),
+        picker('pv4_power', 'PV4 Power', true, 'String 4 generation, in watts.'),
         pickerMaybeDisabled('pv3_voltage', 'PV3 Voltage', pvVoltLocked, true),
         pickerMaybeDisabled('pv4_voltage', 'PV4 Voltage', pvVoltLocked, true),
       ], { toggleKey: '_show_pv_extra', toggleOn: showPVExtra, hidden: !showPVExtra }),
@@ -579,9 +597,10 @@ class ZeeSkyCardEditor extends HTMLElement {
     shell.appendChild(makeSection('grid', '🔌', 'Grid', [
       switchRow('invert_grid_power', '🔄 Invert grid power sign', 'Enable if positive = exporting (e.g. GoodWe active_power)'),
       divider(),
-      picker('grid_active_power',  'Grid Active Power'),
-      picker('grid_voltage',       'Grid Voltage', true),
-      picker('grid_frequency',     'Grid Frequency', true),
+      picker('grid_active_power',  'Grid Active Power', false, 'Instantaneous import/export power (W).'),
+      picker('grid_power_alt',     'Grid Active Power (fallback)', true, 'Used only when the main Grid Active Power sensor is unavailable.'),
+      picker('grid_voltage',       'Grid Voltage', true, 'Line voltage (V).'),
+      picker('grid_frequency',     'Grid Frequency', true, 'Grid frequency (Hz).'),
       divider(),
       makeSection('grid3phase', '⚡', '3-Phase Breakdown', [
         picker('grid_phase_a', 'Phase L1 Power', true),
@@ -598,18 +617,18 @@ class ZeeSkyCardEditor extends HTMLElement {
       switchRow('invert_battery_power', '🔄 Invert battery power sign', 'Enable if positive = discharging'),
       divider(),
       makeSection('batt1inner', '🔋', 'Primary Battery', [
-        picker('battery_soc',      'Battery SOC'),
-        picker('battery_power',    'Battery Power'),
-        picker('battery_current',  'Battery Current'),
-        picker('battery_voltage',  'Battery Voltage'),
-        pickerMaybeDisabled('battery_temp1',    'Temp 1',           cellTempLocked),
-        pickerMaybeDisabled('battery_temp2',    'Temp 2',           cellTempLocked),
-        pickerMaybeDisabled('battery_mos',      'BMS Temp',         bmsTempLocked),
-        pickerMaybeDisabled('battery_min_cell', 'Min Cell Voltage', minCellLocked),
-        pickerMaybeDisabled('battery_max_cell', 'Max Cell Voltage', maxCellLocked),
+        picker('battery_soc',      'Battery SOC', false, 'State of charge (%).'),
+        picker('battery_power',    'Battery Power', false, 'Instantaneous charge/discharge power (W).'),
+        picker('battery_current',  'Battery Current', false, 'Charge/discharge current (A) — needed for the Endurance tile.'),
+        picker('battery_voltage',  'Battery Voltage', false, 'Pack voltage (V) — used for Ah→Wh conversion.'),
+        pickerMaybeDisabled('battery_temp1',    'Temp 1',           cellTempLocked, false, 'Cell temperature probe (°C/°F).'),
+        pickerMaybeDisabled('battery_temp2',    'Temp 2',           cellTempLocked, false, 'Cell temperature probe (°C/°F).'),
+        pickerMaybeDisabled('battery_mos',      'BMS Temp',         bmsTempLocked, false, 'BMS board temperature (°C/°F).'),
+        pickerMaybeDisabled('battery_min_cell', 'Min Cell Voltage', minCellLocked, false, 'Lowest cell voltage (V).'),
+        pickerMaybeDisabled('battery_max_cell', 'Max Cell Voltage', maxCellLocked, false, 'Highest cell voltage (V).'),
         divider(),
-        picker('goodwe_battery_soc',  'Fallback SOC',     true),
-        picker('goodwe_battery_curr', 'Fallback Current', true),
+        picker('goodwe_battery_soc',  'GoodWe SOC Fallback',     true, 'GoodWe-only — used only when Battery SOC is unavailable.'),
+        picker('goodwe_battery_curr', 'GoodWe Current Fallback', true, 'GoodWe-only — used only when Battery Current is unavailable.'),
       ], { toggleKey: '_show_battery', toggleOn: showBatt1, hidden: !showBatt1 }),
       divider(),
       makeSection('battery2', '🔋', 'Secondary Battery', [
@@ -627,18 +646,18 @@ class ZeeSkyCardEditor extends HTMLElement {
     shell.appendChild(makeSection('inverter', '🔄', 'Inverter', [
       switchRow('_show_inv_banner', '📛 Show Inverter Banner', 'Shows the INV temp/load badge in the flow diagram'),
       divider(),
-      picker('inv_temp',   'Inverter Temp'),
-      picker('consump',    'House Consumption'),
-      picker('load_voltage', 'Load Voltage', true),
+      picker('inv_temp',   'Inverter Temp', false, 'Inverter module temperature (°C/°F).'),
+      picker('consump',    'House Consumption', false, 'Instantaneous house load (W).'),
+      picker('load_voltage', 'Load Voltage', true, 'House supply voltage (V).'),
       divider(),
-      picker('today_batt_chg', 'Today Batt Charge'),
-      picker('batt_dis',       'Today Batt Discharge', true),
-      picker('total_batt_chg', 'Total Batt Charge', true),
-      picker('total_batt_dis', 'Total Batt Discharge', true),
-      picker('today_pv',       'Today PV Generation'),
-      picker('total_pv',       'Total PV Generation'),
-      picker('today_load', 'Today Load (tile 4)', true),
-      picker('total_load_entity', 'Total Load (tile 4)', true),
+      picker('today_batt_chg', 'Today Batt Charge', false, 'Today battery charge energy (kWh).'),
+      picker('batt_dis',       'Today Batt Discharge', true, 'Today battery discharge energy (kWh).'),
+      picker('total_batt_chg', 'Total Batt Charge', true, 'Lifetime battery charge energy (kWh).'),
+      picker('total_batt_dis', 'Total Batt Discharge', true, 'Lifetime battery discharge energy (kWh).'),
+      picker('today_pv',       'Today PV Generation', false, 'Today solar generation (kWh).'),
+      picker('total_pv',       'Total PV Generation', false, 'Lifetime solar generation (kWh).'),
+      picker('today_load', 'Today Load (tile 4)', true, 'Today house consumption (kWh).'),
+      picker('total_load_entity', 'Total Load (tile 4)', true, 'Lifetime house consumption (kWh).'),
       picker('grid_import_total', 'Grid Import Total (kWh)', true),
       picker('grid_export_total', 'Grid Export Total (kWh)', true),
     ]));
@@ -1074,7 +1093,7 @@ class ZeeSkyCard extends HTMLElement {
       _show_battery: true,
       _show_battery2: false,
       invert_battery_power: false,
-      invert_grid_power: true,
+      invert_grid_power: false,
       _show_pv_extra: false,
       _show_ev: false,
       // Per-tile sizes (0 = use global/CSS default)
@@ -1934,7 +1953,7 @@ class ZeeSkyCard extends HTMLElement {
       .dv{height:1px;background:rgba(255,255,255,.07);margin:10px 0}
       .ct{font-size:.65rem;font-weight:650;letter-spacing:2.5px;text-transform:uppercase;color:#f39c4b;display:flex;align-items:center;gap:8px}
       .ct::after{content:'';flex:1;height:1px;background:rgba(243,156,75,0.22)}
-      .pvf{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:2px}
+      .pvf{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:6px;margin-bottom:2px}
       .pvi{text-align:center;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
       .pvi .ico{font-size:1.7rem;margin-bottom:2px;display:block;text-align:center}
       .pvi .lbl{font-size:var(--kfc-label-size,.58rem);color:rgba(200,215,235,0.65);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:2px;display:block;text-align:center}
@@ -2652,6 +2671,17 @@ class ZeeSkyCard extends HTMLElement {
     const _n = (v, fallback = 0) => (v !== null && !isNaN(v)) ? v : fallback;
     const _nullOr0 = (v) => (v !== null && !isNaN(v)) ? v : 0; // for flow/direction values where 0 is valid
 
+    // Temperature unit helpers — read the sensor's own unit (°C/°F) so non-Celsius
+    // users get correct labels. Thresholds stay °C-based; values are normalized.
+    const _unitOf = (eid, fb) => {
+      const s = eid && this._hass && this._hass.states[eid];
+      const u = s && s.attributes && s.attributes.unit_of_measurement ? String(s.attributes.unit_of_measurement).trim() : '';
+      return u || fb;
+    };
+    const _isF = (u) => u === '°F' || u === 'F' || u === '℉';
+    const _tc = (v, u) => _isF(u) ? (v - 32) * 5 / 9 : v; // normalize to °C for threshold checks
+    const _ft = (v, u) => v.toFixed(1) + ' ' + u;         // format with the sensor's own unit
+
     // Declare labelsOn early — used by _invTileSet closure defined below (must precede it)
     const labelsOn = !!(this.config._labels_custom_entities);
 
@@ -2665,13 +2695,6 @@ class ZeeSkyCard extends HTMLElement {
     let gridActive = _gridPrimary !== null ? _gridPrimary : _nullOr0(this._val(this.config.grid_power_alt, true));
     if (this.config.invert_grid_power) gridActive = -gridActive;
     const load = _n(this._val(this.config.consump, true));
-    // Fix #9: store raw null so we can show '--' and use toFixed(2) to avoid float artefacts
-    const _todayPvRaw = this._val(this.config.today_pv);
-    const _todayBattChgRaw = this._val(this.config.today_batt_chg);
-    const _todayLoadRaw = this._val(this.config.today_load);
-    const todayPv = _n(_todayPvRaw);
-    const todayBattChg = _n(_todayBattChgRaw);
-    const todayLoad = _n(_todayLoadRaw);
     const battSoc1 = _n(this._val(this.config.battery_soc) ?? this._val(this.config.goodwe_battery_soc));
     let battPwr1 = _nullOr0(this._val(this.config.battery_power, true));
     if (this.config.invert_battery_power) battPwr1 = -battPwr1;
@@ -2683,8 +2706,6 @@ class ZeeSkyCard extends HTMLElement {
     const mos1 = _n(this._val(this.config.battery_mos));
     const minCell1 = _n(this._val(this.config.battery_min_cell));
     const maxCell1 = _n(this._val(this.config.battery_max_cell));
-    const battDis1Raw = this._val(this.config.batt_dis);
-    const battDis1 = _n(battDis1Raw);
     const invTemp = _n(this._val(this.config.inv_temp));
 
     // System limits – direct numbers
@@ -3003,9 +3024,9 @@ class ZeeSkyCard extends HTMLElement {
     const badge = getEl('battStatusBadge');
     if (badge) { badge.textContent = absPwr1 < 50 ? 'IDLE' : isCharging1 ? 'CHG' : 'DISCHG'; badge.style.color = absPwr1 < 50 ? '#8b949e' : isCharging1 ? '#00d7ff' : '#3ce878'; }
 
-    setText('invTempFlow', invTemp.toFixed(1) + ' °C');
+    setText('invTempFlow', _ft(invTemp, _unitOf(this.config.inv_temp, '°C')));
     setText('invNameLabel', this.config.inverter_name || 'INV');
-    setAttr('invTempFlow', 'fill', invTemp >= THR.tempCrit ? '#ef4444' : invTemp >= THR.tempWarn ? '#f59e0b' : '#e0e8f0');
+    setAttr('invTempFlow', 'fill', _tc(invTemp, _unitOf(this.config.inv_temp, '°C')) >= THR.tempCrit ? '#ef4444' : _tc(invTemp, _unitOf(this.config.inv_temp, '°C')) >= THR.tempWarn ? '#f59e0b' : '#e0e8f0');
     // Inverter banner visibility toggle
     const _invBannerGroup = getEl('fcInvBannerGroup');
     if (_invBannerGroup) _invBannerGroup.style.display = this.config._show_inv_banner === false ? 'none' : '';
@@ -3172,18 +3193,15 @@ class ZeeSkyCard extends HTMLElement {
       return ' ' + val.toFixed(1) + ' ' + unit;
     };
     // TODAY PV — today total + cumulative Total PV (from the dedicated total_pv sensor)
-    const _todayPvText  = _todayPvRaw !== null ? ' ' + todayPv.toFixed(1) + ' kWh' : '-- kWh';
-    _invTileSet('invTodayPv', _todayPvText, '#f4d03f', 'label_entity_today_pv');
+    _invTileSet('invTodayPv', _energyText(this.config.today_pv), '#f4d03f', 'label_entity_today_pv');
     setText('invTotalPv', _energyText(this.config.total_pv));
     // Battery — TODAY charge/discharge (Row 2 tile) + cumulative TOTAL charge/discharge (PV strip)
-    const _chgText = _todayBattChgRaw !== null ? ' ' + todayBattChg.toFixed(1) + ' kWh' : '-- kWh';
-    _invTileSet('invTodayBattChg', _chgText, '#3fb950', 'label_entity_chg_dis');
-    setText('invTodayBattDis', battDis1Raw !== null ? ' ' + battDis1.toFixed(1) + ' kWh' : '-- kWh');
+    _invTileSet('invTodayBattChg', _energyText(this.config.today_batt_chg), '#3fb950', 'label_entity_chg_dis');
+    setText('invTodayBattDis', _energyText(this.config.batt_dis));
     setText('invTotalBattChg', _energyText(this.config.total_batt_chg));
     setText('invTotalBattDis', _energyText(this.config.total_batt_dis));
     // TODAY LOAD — today total + cumulative Total Load (from the dedicated total_load sensor)
-    const _loadText = _todayLoadRaw !== null ? ' ' + todayLoad.toFixed(1) + ' kWh' : '-- kWh';
-    _invTileSet('invTodayLoad', _loadText, '#29b6f6', 'label_entity_today_load');
+    _invTileSet('invTodayLoad', _energyText(this.config.today_load), '#29b6f6', 'label_entity_today_load');
     setText('invTotalLoad', _energyText(this.config.total_load_entity));
     // Grid Import — main value + grid export
     const _gridImportEntityId = this.config.grid_import_today || 'sensor.goodwe_today_energy_import';
@@ -3345,11 +3363,13 @@ class ZeeSkyCard extends HTMLElement {
     const _bT1b = getEl('bTemp1b'); // T2 sub-slot in split tile
     if (_bT1o) {
       const _tempColor = (v) => v >= THR.tempCrit ? '#ef4444' : v >= THR.tempWarn ? '#f59e0b' : '#e0e8f0';
+      const t1u = _unitOf(this.config.battery_temp1, '°C');
+      const t2u = _unitOf(this.config.battery_temp2, '°C');
       if (cellTempCustom) {
         if (!_cellTempRaw) {
-          _bT1o.textContent = temp1_1.toFixed(1) + ' °C';
-          _bT1o.style.color = _tempColor(temp1_1);
-          if (_bT1b) { _bT1b.textContent = temp2_1.toFixed(1) + ' °C'; _bT1b.style.color = _tempColor(temp2_1); }
+          _bT1o.textContent = _ft(temp1_1, t1u);
+          _bT1o.style.color = _tempColor(_tc(temp1_1, t1u));
+          if (_bT1b) { _bT1b.textContent = _ft(temp2_1, t2u); _bT1b.style.color = _tempColor(_tc(temp2_1, t2u)); }
         }
         else if (_cellTempRaw.isText) {
           _bT1o.textContent = _cellTempRaw.text; _bT1o.style.color = '#c9d1d9';
@@ -3360,12 +3380,12 @@ class ZeeSkyCard extends HTMLElement {
           if ((cellTempUnit === '°C' || cellTempUnit === 'C') && correctedVal < 10 && correctedVal > 0) correctedVal *= 10;
           const fmt = _fmtCustom(correctedVal, cellTempUnit);
           _bT1o.textContent = fmt.text; _bT1o.style.color = fmt.color;
-          if (_bT1b) { _bT1b.textContent = temp2_1.toFixed(1) + ' °C'; _bT1b.style.color = _tempColor(temp2_1); }
+          if (_bT1b) { _bT1b.textContent = _ft(temp2_1, t2u); _bT1b.style.color = _tempColor(_tc(temp2_1, t2u)); }
         }
       } else {
-        _bT1o.textContent = temp1_1.toFixed(1) + ' °C';
-        _bT1o.style.color = _tempColor(temp1_1);
-        if (_bT1b) { _bT1b.textContent = temp2_1.toFixed(1) + ' °C'; _bT1b.style.color = _tempColor(temp2_1); }
+        _bT1o.textContent = _ft(temp1_1, t1u);
+        _bT1o.style.color = _tempColor(_tc(temp1_1, t1u));
+        if (_bT1b) { _bT1b.textContent = _ft(temp2_1, t2u); _bT1b.style.color = _tempColor(_tc(temp2_1, t2u)); }
       }
       _applyTileSize(_bT1o, 'val_cell_temp_size');
       if (_bT1b) _applyTileSize(_bT1b, 'val_cell_temp_size');
@@ -3373,17 +3393,19 @@ class ZeeSkyCard extends HTMLElement {
     }
     const _bT2o = getEl('bTemp2');
     if (_bT2o) {
+      const mosu = _unitOf(this.config.battery_mos, '°C');
+      const mos2u = _unitOf(this.config.battery2_mos, '°C');
       if (bmsTempCustom) {
         if (!_bmsTempRaw) {
-          _bT2o.textContent = mos1.toFixed(1) + (dual ? ' / ' + mos2.toFixed(1) : '') + ' °C';
-          const _t2val = dual ? Math.max(mos1, mos2) : mos1;
+          _bT2o.textContent = _ft(mos1, mosu) + (dual ? ' / ' + _ft(mos2, mos2u) : '');
+          const _t2val = dual ? Math.max(_tc(mos1, mosu), _tc(mos2, mos2u)) : _tc(mos1, mosu);
           _bT2o.style.color = _t2val >= THR.tempCrit ? '#ef4444' : _t2val >= THR.tempWarn ? '#f59e0b' : '#e0e8f0';
         }
         else if (_bmsTempRaw.isText) { _bT2o.textContent = _bmsTempRaw.text; _bT2o.style.color = '#c9d1d9'; }
         else { const fmt = _fmtCustom(_bmsTempRaw.val, bmsTempUnit); _bT2o.textContent = fmt.text; _bT2o.style.color = fmt.color; }
       } else {
-        _bT2o.textContent = mos1.toFixed(1) + (dual ? ' / ' + mos2.toFixed(1) : '') + ' °C';
-        const _t2val = dual ? Math.max(mos1, mos2) : mos1;
+        _bT2o.textContent = _ft(mos1, mosu) + (dual ? ' / ' + _ft(mos2, mos2u) : '');
+        const _t2val = dual ? Math.max(_tc(mos1, mosu), _tc(mos2, mos2u)) : _tc(mos1, mosu);
         _bT2o.style.color = _t2val >= THR.tempCrit ? '#ef4444' : _t2val >= THR.tempWarn ? '#f59e0b' : '#e0e8f0';
       }
       _applyTileSize(_bT2o, 'val_bms_temp_size');
@@ -3644,6 +3666,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.8.10',
+  version: '2.9.0',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
