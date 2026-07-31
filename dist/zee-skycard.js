@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.22
+// zee-skycard.js – Sky Edition v2.7.0
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1508,7 +1508,7 @@ class ZeeSkyCard extends HTMLElement {
       const showMsg = c.src ? 'none' : 'flex';
       const msg = c.eid ? '<span style="font-size:1.3rem">📷</span><span>Loading...</span>' : '<span style="font-size:1.3rem">📷</span><span>No camera</span>';
       g += `<div onclick="const o=this.closest('[data-host]')._cardHost;o._openCameraFull(${i})" style="aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);position:relative;cursor:${c.eid ? 'pointer' : 'default'}">
-        <img src="${c.src || ''}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:${showImg};background:#000" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <img src="${c.src || ''}" loading="lazy" style="width:100%;height:100%;object-fit:contain;display:${showImg};background:#000" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div style="display:${showMsg};align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.25);font-size:.7rem;flex-direction:column;gap:4px">${msg}</div>
       </div>`;
     }
@@ -1525,7 +1525,7 @@ class ZeeSkyCard extends HTMLElement {
       `<div style="display:flex;flex-direction:column;gap:12px">
         <div onclick="const o=this.closest('[data-host]')._cardHost;o._openCameraPopup()" style="align-self:flex-start;font-size:.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#f39c4b;cursor:pointer;display:flex;align-items:center;gap:5px;background:rgba(243,156,75,0.10);border:1px solid rgba(243,156,75,0.25);padding:5px 12px;border-radius:8px">&larr; Back to all cameras</div>
         <div style="aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.10);position:relative">
-          <img src="${c.src || ''}" style="width:100%;height:100%;object-fit:cover;display:${showImg};background:#000" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <img src="${c.src || ''}" style="width:100%;height:100%;object-fit:contain;display:${showImg};background:#000" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
           <div style="display:${showMsg};align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.3);font-size:.8rem;flex-direction:column;gap:6px">${msg}</div>
         </div>
       </div>`, { maxWidth: '920px' });
@@ -3558,6 +3558,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.22',
+  version: '2.7.0',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
