@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.8.2
+// zee-skycard.js – Sky Edition v2.8.3
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1362,6 +1362,7 @@ class ZeeSkyCard extends HTMLElement {
     if(soc<=thresh_critical){ c='#ef4444'; f='url(#battGlowRed)';    tc='#fff'; }
     else if(soc<=thresh_warn){ c='#f59e0b'; f='url(#battGlowOrange)'; tc='#000'; }
     else                     { c='#38bdf8'; f='url(#battGlowCyan)';   tc='#fff'; }
+    if (soc < 40) tc = '#fff';
     return{y:fY,height:fH,color:c,filter:fH>4?f:'none',textColor:tc};
   }
 
@@ -3643,6 +3644,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.8.2',
+  version: '2.8.3',
 });
 customElements.define('zee-skycard', ZeeSkyCard);

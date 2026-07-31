@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.8.2**
+`zee-skycard.js` · Sky Edition **v2.8.3**
 <img width="1419" height="2405" alt="Screenshot_2026-06-02-11-05-46-70_cbf47468f7ecfbd8ebcc46bf9cc626da" src="https://github.com/user-attachments/assets/9300fcb5-4b67-4eb7-8099-02701e8a5890" />
 
 
@@ -460,4 +460,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.8.2*
+*Zee Energy · zee-skycard · Sky Edition v2.8.3*
