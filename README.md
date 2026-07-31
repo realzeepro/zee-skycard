@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.8.5**
+`zee-skycard.js` · Sky Edition **v2.8.9**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -89,6 +89,7 @@ The card needs 13 PNG files placed at:
 | `sky-thunderstorm` | Thunderstorm (any time) |
 | `sky-snowy-day` | Snow, daytime |
 | `sky-fog-day` | Fog / mist (any time) |
+```
 
 All images must be **PNG** format. 
 
@@ -265,10 +266,6 @@ Temperature colour follows the threshold system; the battery chip turns orange �
 
 The **System**, **Smart Plugs**, and **Climate** popups open from their respective monitoring tiles when enabled.
 
-<img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-inverter-popup.png" alt="Inverter popup card">
-
-<img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-smart-plugs-popup.png" alt="Smart plugs popup card">
-
 ---
 
 ## Colour Logic
@@ -284,6 +281,10 @@ The **System**, **Smart Plugs**, and **Climate** popups open from their respecti
 ---
 
 ## File Structure
+
+![Inverter popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-inverter-popup.png)
+
+![Smart plugs popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-smart-plugs-popup.png)
 
 ```
 /config/www/community/zee-skycard/
@@ -384,7 +385,7 @@ Full visual overhaul of `khan-skycard`. Forked into a separate repository as **z
 
 ## Notes
 
-- Tested on Home Assistant OS with GoodWe ET/ES inverter integration and JK BMS Bluetooth integration.
+- Tested by **Zee** on Home Assistant OS with a **GoodWe ES Uniq 8 kW** inverter and **GoodWe Lynx A G3** battery (plus JK BMS Bluetooth integration).
 - The card uses shadow DOM — theme CSS does not penetrate. All colours are hardcoded or driven by entity values.
 - Config keys prefixed with `_` (e.g. `_show_battery`) are editor-only boolean toggles stored in the card YAML.
 - Sky image selection requires a `weather_entity` to be set. Without it, the card falls back to `sky-clear-day.png`.
@@ -465,4 +466,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.8.5*
+*Zee Energy · zee-skycard · Sky Edition v2.8.9*
