@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.8.9**
+`zee-skycard.js` · Sky Edition **v2.8.10**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -385,7 +385,7 @@ Full visual overhaul of `khan-skycard`. Forked into a separate repository as **z
 
 ## Notes
 
-- Tested by **Zee** on Home Assistant OS with a **GoodWe ES Uniq 8 kW** inverter and **GoodWe Lynx A G3** battery (plus JK BMS Bluetooth integration).
+- Tested by **Zee** on a Home Assistant **Docker Container** with a **GoodWe ES Uniq 8 kW** inverter and **GoodWe Lynx A G3** battery.
 - The card uses shadow DOM — theme CSS does not penetrate. All colours are hardcoded or driven by entity values.
 - Config keys prefixed with `_` (e.g. `_show_battery`) are editor-only boolean toggles stored in the card YAML.
 - Sky image selection requires a `weather_entity` to be set. Without it, the card falls back to `sky-clear-day.png`.
@@ -466,4 +466,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.8.9*
+*Zee Energy · zee-skycard · Sky Edition v2.8.10*
