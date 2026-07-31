@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.21
+// zee-skycard.js – Sky Edition v2.6.22
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1423,7 +1423,7 @@ class ZeeSkyCard extends HTMLElement {
     if (ov) { ov.remove(); this._popupOverlay = null; }
   }
 
-  _popup(html) {
+  _popup(html, opts = {}) {
     this._closePopup();
     const ov = document.createElement('div');
     ov._cardHost = this;
@@ -1440,7 +1440,7 @@ class ZeeSkyCard extends HTMLElement {
     const bx = document.createElement('div');
     Object.assign(bx.style, {
       background:'rgba(15,23,42,0.82)', border:'1px solid rgba(255,255,255,0.10)',
-      borderRadius:'18px', padding:'24px 26px', maxWidth:'620px', width:'92%', margin:'5px',
+      borderRadius:'18px', padding:'24px 26px', maxWidth: opts.maxWidth || '620px', width:'92%', margin:'5px',
       maxHeight:'88vh', overflowY:'auto', position:'relative',
       boxShadow:'0 16px 56px rgba(0,0,0,0.5)',
       backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)',
@@ -1500,20 +1500,35 @@ class ZeeSkyCard extends HTMLElement {
       const src = eid ? this._resolveCameraStream(eid) : null;
       cams.push({ name, src, eid });
     }
+    this._cams = cams;
     let g = '';
     for (let i = 0; i < 4; i++) {
       const c = cams[i] || { name:'', src:null, eid:'' };
       const showImg = c.src ? 'block' : 'none';
       const showMsg = c.src ? 'none' : 'flex';
       const msg = c.eid ? '<span style="font-size:1.3rem">📷</span><span>Loading...</span>' : '<span style="font-size:1.3rem">📷</span><span>No camera</span>';
-      g += `<div style="aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);position:relative">
-        <img src="${c.src || ''}" alt="${c.name}" loading="lazy" style="width:100%;height:100%;object-fit:contain;display:${showImg};background:#000" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      g += `<div onclick="const o=this.closest('[data-host]')._cardHost;o._openCameraFull(${i})" style="aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);position:relative;cursor:${c.eid ? 'pointer' : 'default'}">
+        <img src="${c.src || ''}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:${showImg};background:#000" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div style="display:${showMsg};align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.25);font-size:.7rem;flex-direction:column;gap:4px">${msg}</div>
-        <div style="position:absolute;bottom:0;left:0;right:0;font-size:.6rem;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.55);padding:3px 8px;text-align:center;letter-spacing:.5px">${c.name}</div>
       </div>`;
     }
     this._popup(this._popupClose() + this._popupTitle('📷 Cameras') +
       `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${g}</div>`);
+  }
+
+  _openCameraFull(i) {
+    const c = this._cams?.[i] || { name:'', src:null, eid:'' };
+    const showImg = c.src ? 'block' : 'none';
+    const showMsg = c.src ? 'none' : 'flex';
+    const msg = c.eid ? '<span style="font-size:1.6rem">📷</span><span>Loading...</span>' : '<span style="font-size:1.6rem">📷</span><span>No camera</span>';
+    this._popup(this._popupClose() + this._popupTitle('📷 ' + (c.name || '')) +
+      `<div style="display:flex;flex-direction:column;gap:12px">
+        <div onclick="const o=this.closest('[data-host]')._cardHost;o._openCameraPopup()" style="align-self:flex-start;font-size:.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#f39c4b;cursor:pointer;display:flex;align-items:center;gap:5px;background:rgba(243,156,75,0.10);border:1px solid rgba(243,156,75,0.25);padding:5px 12px;border-radius:8px">&larr; Back to all cameras</div>
+        <div style="aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.10);position:relative">
+          <img src="${c.src || ''}" style="width:100%;height:100%;object-fit:cover;display:${showImg};background:#000" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div style="display:${showMsg};align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.3);font-size:.8rem;flex-direction:column;gap:6px">${msg}</div>
+        </div>
+      </div>`, { maxWidth: '920px' });
   }
 
   _openSystemPopup() {
@@ -1624,6 +1639,7 @@ class ZeeSkyCard extends HTMLElement {
     const soc   = v(this.config.battery_soc);
     const volt  = v(this.config.battery_voltage);
     const pwr   = v(this.config.battery_power);
+    const cur   = v(this.config.battery_current) ?? v(this.config.goodwe_battery_curr);
     const cellMax = v(this.config.battery_max_cell);
     const cellMin = v(this.config.battery_min_cell);
     const soh   = v(this.config.bat_soh);
@@ -1638,6 +1654,7 @@ class ZeeSkyCard extends HTMLElement {
       this._popupEntityItem('SOC', soc !== null ? soc + ' %' : '--', this.config.battery_soc, '#4ade80'),
       this._popupEntityItem('Voltage', volt !== null ? volt.toFixed(2) + ' V' : '--', this.config.battery_voltage, '#4ade80'),
       this._popupEntityItem('Power', pwr !== null ? pwr.toFixed(0) + ' W' : '--', this.config.battery_power, '#e0e8f0'),
+      this._popupEntityItem('Current', cur !== null ? cur.toFixed(2) + ' A' : '--', this.config.battery_current || this.config.goodwe_battery_curr, '#e0e8f0'),
       this._popupEntityItem('Cell Max V', cellMax !== null ? cellMax.toFixed(3) + ' V' : '--', this.config.battery_max_cell, cellMax !== null && cellMax > 3.65 ? '#ef4444' : '#4ade80'),
       this._popupEntityItem('Cell Min V', cellMin !== null ? cellMin.toFixed(3) + ' V' : '--', this.config.battery_min_cell, cellMin !== null && cellMin < 3.0 ? '#ef4444' : '#4ade80'),
       this._popupEntityItem('SOH', soh !== null ? soh + ' %' : '--', this.config.bat_soh, '#3fb950'),
@@ -3541,6 +3558,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.21',
+  version: '2.6.22',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
