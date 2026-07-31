@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.19
+// zee-skycard.js – Sky Edition v2.6.20
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1869,7 +1869,7 @@ class ZeeSkyCard extends HTMLElement {
       <div id="kfcSkyDiv" aria-hidden="true"></div>
       <div id="kfcBottomGrad" style="position:absolute;top:58%;left:0;right:0;bottom:0;pointer-events:none;z-index:0;border-radius:0 0 14px 14px;transition:background 1.4s ease"></div>
       <div class="kfc-content" style="transform:translateY(-4%)">
-      <div class="ct">&#x2014; Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
+      <div class="ct" style="margin-top:0;margin-bottom:0">&#x2014; Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
       <div style="width:100%"><svg id="flowSvg" viewBox="0 0 520 465" style="width:100%;display:block">
       <defs>
         <filter id="arcSunF" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="7"/></filter>
@@ -2086,17 +2086,17 @@ class ZeeSkyCard extends HTMLElement {
           <div style="min-width:0;width:100%">
             <div class="l">${this.config.label_cell_temp_minmax||'CELL TEMP'}</div>
             ${(this.config._labels_custom_entities && this.config.label_entity_cell_temp) ? `
-            <div class="v" id="bTemp1" style="color:#e0e8f0;margin-top:4px">--</div>
+            <div class="v" id="bTemp1" style="color:#e0e8f0;margin-top:4px;font-size:.75rem">--</div>
             <span id="bTemp1b" style="display:none"></span>` : `
             <div style="display:flex;justify-content:space-evenly;align-items:center;width:100%;margin-top:2px">
               <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
                 <span style="font-size:.55rem;color:rgba(200,215,235,0.50);letter-spacing:1px;text-transform:uppercase">T1</span>
-                <span id="bTemp1" style="font-size:.85rem;font-weight:650;color:#e0e8f0">--</span>
+                <span id="bTemp1" style="font-size:.75rem;font-weight:650;color:#e0e8f0">--</span>
               </div>
               <div style="width:1px;height:24px;background:rgba(255,255,255,0.12)"></div>
               <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
                 <span style="font-size:.55rem;color:rgba(200,215,235,0.50);letter-spacing:1px;text-transform:uppercase">T2</span>
-                <span id="bTemp1b" style="font-size:.85rem;font-weight:650;color:#e0e8f0">-- °C</span>
+                <span id="bTemp1b" style="font-size:.75rem;font-weight:650;color:#e0e8f0">-- °C</span>
               </div>
             </div>`}
           </div>
@@ -2106,7 +2106,7 @@ class ZeeSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">&#x1F321;&#xFE0F;</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_bms_temp||'BMS TEMP'}</div>
-              <div class="v" id="bTemp2" style="color:#e0e8f0">-- &#x00B0;C</div>
+              <div class="v" id="bTemp2" style="color:#e0e8f0;font-size:.75rem">-- &#x00B0;C</div>
             </div>
           </div>
         </div>
@@ -2114,10 +2114,10 @@ class ZeeSkyCard extends HTMLElement {
           <div style="min-width:0;width:100%">
             <div class="l" style="margin-bottom:4px">${this.config.label_pv_voltage||'PV VOLTAGE'}</div>
             <div style="display:flex;justify-content:space-evenly;align-items:center;width:100%">
-              <span id="bPv1Volt" style="font-size:.85rem;font-weight:650;color:#ffe83c">-- V</span>
-              <span id="bPv2Volt" style="font-size:.85rem;font-weight:650;color:#ffe83c">-- V</span>
-              ${showPvExtra ? `<span id="bPv3Volt" style="font-size:.85rem;font-weight:650;color:#ffe83c">-- V</span>` : ''}
-              ${showPvExtra ? `<span id="bPv4Volt" style="font-size:.85rem;font-weight:650;color:#ffe83c">-- V</span>` : ''}
+              <span id="bPv1Volt" style="font-size:.75rem;font-weight:650;color:#ffe83c">-- V</span>
+              <span id="bPv2Volt" style="font-size:.75rem;font-weight:650;color:#ffe83c">-- V</span>
+              ${showPvExtra ? `<span id="bPv3Volt" style="font-size:.75rem;font-weight:650;color:#ffe83c">-- V</span>` : ''}
+              ${showPvExtra ? `<span id="bPv4Volt" style="font-size:.75rem;font-weight:650;color:#ffe83c">-- V</span>` : ''}
             </div>
           </div>
         </div>
@@ -2129,17 +2129,17 @@ class ZeeSkyCard extends HTMLElement {
           <div style="min-width:0;width:100%">
             <div class="l">${this.config.label_cell_volt||'CELL VOLT'}</div>
             ${(this.config._labels_custom_entities && this.config.label_entity_cell_volt) ? `
-            <div class="v" id="bMinCell" style="color:#e0e8f0;margin-top:4px">-- V</div>
+            <div class="v" id="bMinCell" style="color:#e0e8f0;margin-top:4px;font-size:.75rem">-- V</div>
             <span id="bMaxCell" style="display:none"></span>` : `
             <div style="display:flex;justify-content:space-evenly;align-items:center;width:100%;margin-top:2px">
               <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
                 <span style="font-size:.55rem;color:rgba(200,215,235,0.50);letter-spacing:1px;text-transform:uppercase">MIN</span>
-                <span id="bMinCell" style="font-size:.85rem;font-weight:650;color:#e0e8f0">-- V</span>
+                <span id="bMinCell" style="font-size:.75rem;font-weight:650;color:#e0e8f0">-- V</span>
               </div>
               <div style="width:1px;height:24px;background:rgba(255,255,255,0.12)"></div>
               <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
                 <span style="font-size:.55rem;color:rgba(200,215,235,0.50);letter-spacing:1px;text-transform:uppercase">MAX</span>
-                <span id="bMaxCell" style="font-size:.85rem;font-weight:650;color:#e0e8f0">-- V</span>
+                <span id="bMaxCell" style="font-size:.75rem;font-weight:650;color:#e0e8f0">-- V</span>
               </div>
             </div>`}
           </div>
@@ -2149,7 +2149,7 @@ class ZeeSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">⚡</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_remaining||'REMAINING'}</div>
-              <div class="v" id="invRemCap" style="color:#3ce878">-- Ah</div>
+              <div class="v" id="invRemCap" style="color:#3ce878;font-size:.75rem">-- Ah</div>
               <div id="invRemKwh" style="font-size:.70rem;font-weight:400;color:rgba(160,185,220,0.55);display:none">-- kWh</div>
             </div>
           </div>
@@ -2159,9 +2159,9 @@ class ZeeSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">🔋</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_today_batt_charge||'Charge'}</div>
-              <div class="v" id="invTodayBattChg" style="color:#29b6f6">-- kWh</div>
+              <div class="v" id="invTodayBattChg" style="color:#29b6f6;font-size:.75rem">-- kWh</div>
               <div class="l">${this.config.label_today_batt_discharge||'Discharge'}</div>
-              <div class="v" id="invTodayBattDis" style="color:#29b6f6">-- kWh</div>
+              <div class="v" id="invTodayBattDis" style="color:#29b6f6;font-size:.75rem">-- kWh</div>
             </div>
           </div>
         </div>
@@ -3541,6 +3541,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.19',
+  version: '2.6.20',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
