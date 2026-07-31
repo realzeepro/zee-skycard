@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.3
+// zee-skycard.js – Sky Edition v2.9.4
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1932,7 +1932,9 @@ class ZeeSkyCard extends HTMLElement {
             <!-- Big bold % text – matches model image -->
             <text id="fcBattVal" x="84" y="215" text-anchor="middle" font-size="19" font-weight="800" fill="#fff" stroke="rgba(0,0,0,0.65)" stroke-width="2" paint-order="stroke">--%</text>
           `) +
-      `</g>
+      `<!-- Battery voltage at the top of the battery SVG -->
+        <text id="fcBattVoltTop" x="84" y="152" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" stroke="rgba(0,0,0,0.65)" stroke-width="2" paint-order="stroke">-- V</text>
+      </g>
       </g>`
     );
 
@@ -2088,11 +2090,15 @@ class ZeeSkyCard extends HTMLElement {
       <path id="flowGridIn"  d="M 81,327 H 167 V 339 H 195" fill="none" stroke="rgba(0,240,255,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
       <path id="flowGridInC" d="M 81,327 H 167 V 339 H 195" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowCyan)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
 
+      <!-- Grid flow labels — power above the line, voltage below (mirrors the battery flow) -->
+      <text id="fcGridFlowVal" x="124" y="322" text-anchor="middle" font-size="11" font-weight="650" fill="#e0e8f0">0 W</text>
+      <text id="fcGridFlowVolt" x="124" y="338" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
+
       <!-- GRID OUT (exporting, cyan): house → grid -->
       <path id="flowGridOut"  d="M 195,339 H 167 V 327 H 81" fill="none" stroke="rgba(0,240,255,0.28)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
       <path id="flowGridOutC" d="M 195,339 H 167 V 327 H 81" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowCyan)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="0.8s" repeatCount="indefinite" calcMode="linear"/></path>
 
-      <!-- Grid flow watt label removed — power shown in GRID col below -->
+      <!-- Grid flow watt label moved — power shown above flowGridIn, voltage below -->
 
       ${showBatt1 ? `
       <!-- BATT IN (charging, green): house → battery -->
@@ -2121,8 +2127,8 @@ class ZeeSkyCard extends HTMLElement {
 
 
 
-      <!-- Battery voltage below flow line -->
-      <text id="fcBattVoltBelow" x="400" y="338" text-anchor="middle" font-size="11" font-weight="600" fill="#ffffff">-- V</text>
+      <!-- Battery current below flow line -->
+      <text id="fcBattCurrBelow" x="400" y="338" text-anchor="middle" font-size="11" font-weight="600" fill="#ffffff">-- A</text>
 
       <!-- GRID / LOAD / PV cols + vertical dividers + horizontal rule — all pulled down together -->
       <g transform="translate(0,28)">
@@ -2131,12 +2137,9 @@ class ZeeSkyCard extends HTMLElement {
       <line x1="182" y1="405" x2="182" y2="430" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
       <line x1="327" y1="405" x2="327" y2="430" stroke="rgba(255,255,255,0.13)" stroke-width="1"/>
 
-      <!-- GRID col — single power+volt by default; L1/L2/L3 sub-values when 3-phase enabled -->
+      <!-- GRID col — power + voltage shown on the flow line above; frequency here -->
       <text x="75" y="400" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">GRID</text>
-      <!-- Default: power (left) + voltage (right) side-by-side on one baseline -->
-      <text id="fcGridVal" x="45" y="421" text-anchor="middle" font-size="15" font-weight="650" fill="#e0e8f0">0 W</text>
-      <text id="fcGridVoltVal" x="112" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
-      <text id="fcGridFreqVal" x="150" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- Hz</text>
+      <text id="fcGridFreqVal" x="75" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- Hz</text>
       <!-- 3-phase sub-row: L1 | L2 | L3 — hidden by default, shown when _show_3phase enabled -->
       <g id="grid3PhaseVertical" display="none">
         <!-- L1 -->
@@ -2964,8 +2967,10 @@ class ZeeSkyCard extends HTMLElement {
       const bh2 = getEl('battFillHL2'); if (bh2) { bh2.setAttribute('y', fill2.y); bh2.setAttribute('height', fill2.height); }
       setText('fcBattVal1', battSoc1 + '%'); setAttr('fcBattVal1', 'fill', fill1.textColor);
       setText('fcBattVal2', battSoc2 + '%'); setAttr('fcBattVal2', 'fill', fill2.textColor);
-      const voltBelowElD = getEl('fcBattVoltBelow');
-      if (voltBelowElD) { voltBelowElD.textContent = battVolt1.toFixed(1) + ' / ' + battVolt2.toFixed(1) + ' V'; voltBelowElD.setAttribute('fill','#ffffff'); }
+      const voltTopElD = getEl('fcBattVoltTop');
+      if (voltTopElD) { voltTopElD.textContent = battVolt1.toFixed(1) + ' / ' + battVolt2.toFixed(1) + ' V'; voltTopElD.setAttribute('fill','#ffffff'); }
+      const currBelowElD = getEl('fcBattCurrBelow');
+      if (currBelowElD) { currBelowElD.textContent = battCurr1.toFixed(1) + ' / ' + battCurr2.toFixed(1) + ' A'; currBelowElD.setAttribute('fill','#ffffff'); }
       const bolt1 = getEl('battBoltGroup1'), bolt2 = getEl('battBoltGroup2');
       if (bolt1) bolt1.setAttribute('opacity', battPwr1 > 10 ? '1' : '0');
       if (bolt2) bolt2.setAttribute('opacity', battPwr2 > 10 ? '1' : '0');
@@ -2975,8 +2980,10 @@ class ZeeSkyCard extends HTMLElement {
       const bh = getEl('battFillHL'); if (bh) { bh.setAttribute('y', fill.y); bh.setAttribute('height', fill.height); }
       setText('fcBattVal', battSoc1 + '%'); setAttr('fcBattVal', 'fill', fill.textColor);
       const bolt = getEl('battBoltGroup'); if (bolt) bolt.setAttribute('opacity', battPwr1 > 10 ? '1' : '0');
-      const voltBelowEl = getEl('fcBattVoltBelow');
-      if (voltBelowEl) { voltBelowEl.textContent = battVolt1.toFixed(1) + ' V'; voltBelowEl.setAttribute('fill','#ffffff'); }
+      const voltTopEl = getEl('fcBattVoltTop');
+      if (voltTopEl) { voltTopEl.textContent = battVolt1.toFixed(1) + ' V'; voltTopEl.setAttribute('fill','#ffffff'); }
+      const currBelowEl = getEl('fcBattCurrBelow');
+      if (currBelowEl) { currBelowEl.textContent = battCurr1.toFixed(1) + ' A'; currBelowEl.setAttribute('fill','#ffffff'); }
     }
 
     // Color and value for cell tiles � handled by label override block below
@@ -3059,9 +3066,9 @@ class ZeeSkyCard extends HTMLElement {
       _loadVoltEl.setAttribute('fill', load > 0 ? 'rgba(200,220,255,0.75)' : 'rgba(180,190,210,0.35)');
     }
 
-    // Grid col: red=importing, green=exporting, gray=idle
-    const gridFcEl    = getEl('fcGridVal');
-    const gridVoltEl  = getEl('fcGridVoltVal');
+    // Grid flow labels — power above flowGridIn, voltage below (mirrors the battery flow)
+    const gridFcEl    = getEl('fcGridFlowVal');
+    const gridVoltEl  = getEl('fcGridFlowVolt');
     const phase3Group = getEl('grid3PhaseVertical');
     const _show3ph    = !!(this.config._show_3phase);
 
@@ -3670,6 +3677,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.3',
+  version: '2.9.4',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
