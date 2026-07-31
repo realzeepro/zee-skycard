@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.6.20
+// zee-skycard.js – Sky Edition v2.6.21
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1812,8 +1812,8 @@ class ZeeSkyCard extends HTMLElement {
             <rect id="battFillHL2"  x="85" y="269" width="30" height="0" rx="0" fill="url(#battFillHighlight)" clip-path="url(#battBodyClipRight)" style="pointer-events:none"/>
             <g id="battBoltGroup1" opacity="0"><polygon points="72,176 64,195 70,195 66,215 78,193 72,193 80,176" fill="#1a4aff" stroke="rgba(100,150,255,.5)" stroke-width="0.8" filter="url(#battGlowBolt)"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.0s" repeatCount="indefinite"/></polygon></g>
             <g id="battBoltGroup2" opacity="0"><polygon points="104,176 96,195 102,195 98,215 110,193 104,193 112,176" fill="#1a4aff" stroke="rgba(100,150,255,.5)" stroke-width="0.8" filter="url(#battGlowBolt)"><animate attributeName="opacity" values="0.5;1;0.5" dur="1.0s" repeatCount="indefinite"/></polygon></g>
-            <text id="fcBattVal1" x="68"  y="210" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">--%</text>
-            <text id="fcBattVal2" x="100" y="210" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">--%</text>
+            <text id="fcBattVal1" x="68"  y="210" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">--%</text>
+            <text id="fcBattVal2" x="100" y="210" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">--%</text>
           ` : `
             <rect id="battFillBar" x="53" y="269" width="62" height="0" rx="0" fill="#00f0ff" clip-path="url(#battBodyClip)"/>
             <rect id="battFillHL"  x="53" y="269" width="62" height="0" rx="0" fill="url(#battFillHighlight)" clip-path="url(#battBodyClip)" style="pointer-events:none"/>
@@ -1844,7 +1844,7 @@ class ZeeSkyCard extends HTMLElement {
       .st .l{font-size:var(--kfc-label-size,.56rem);color:rgba(200,215,235,0.65);letter-spacing:1.3px;text-transform:uppercase;margin-bottom:3px;font-weight:500;display:block;text-align:left}
       .st .v{font-size:var(--kfc-value-size,.95rem);font-weight:650;color:#e0e8f0;display:block;text-align:left}
       .dv{height:1px;background:rgba(255,255,255,.07);margin:10px 0}
-      .ct{font-size:.65rem;font-weight:650;letter-spacing:2.5px;text-transform:uppercase;color:#f39c4b;margin-bottom:8px;margin-top:10px;display:flex;align-items:center;gap:8px}
+      .ct{font-size:.65rem;font-weight:650;letter-spacing:2.5px;text-transform:uppercase;color:#f39c4b;display:flex;align-items:center;gap:8px}
       .ct::after{content:'';flex:1;height:1px;background:rgba(243,156,75,0.22)}
       .pvf{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:2px}
       .pvi{text-align:center;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
@@ -1868,8 +1868,8 @@ class ZeeSkyCard extends HTMLElement {
     <div class="kfc-shell" id="kfcShell">
       <div id="kfcSkyDiv" aria-hidden="true"></div>
       <div id="kfcBottomGrad" style="position:absolute;top:58%;left:0;right:0;bottom:0;pointer-events:none;z-index:0;border-radius:0 0 14px 14px;transition:background 1.4s ease"></div>
-      <div class="kfc-content" style="transform:translateY(-4%)">
-      <div class="ct" style="margin-top:0;margin-bottom:0">&#x2014; Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
+      <div class="kfc-content" style="transform:translateY(-3%)">
+      <div class="ct" style="position:absolute;top:25px">&#x2014; Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
       <div style="width:100%"><svg id="flowSvg" viewBox="0 0 520 465" style="width:100%;display:block">
       <defs>
         <filter id="arcSunF" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="7"/></filter>
@@ -1993,7 +1993,7 @@ class ZeeSkyCard extends HTMLElement {
       <path id="flowBattOutC" d="M 462,327 H 360 V 339 H 335" fill="none" stroke="#39ff14" stroke-width="1.5" stroke-dasharray="6 5" stroke-linecap="round" opacity="0" style="display:none" marker-end="url(#arrowGreen)"><animate attributeName="stroke-dashoffset" from="11" to="0" dur="4.0s" repeatCount="indefinite" calcMode="linear"/></path>
 
       <!-- Batt watt label mid-line -->
-      <text id="fcBattFlowVal" x="400" y="322" text-anchor="middle" font-size="10" font-weight="650" fill="#39ff14">0 W</text>
+      <text id="fcBattFlowVal" x="400" y="322" text-anchor="middle" font-size="11.5" font-weight="650" fill="#39ff14">0 W</text>
       ` : ''}
 
       <!-- ── BATTERY SVG CYLINDER ── -->
@@ -2011,7 +2011,7 @@ class ZeeSkyCard extends HTMLElement {
 
 
       <!-- Battery voltage below flow line -->
-      <text id="fcBattVoltBelow" x="400" y="338" text-anchor="middle" font-size="9.5" font-weight="600" fill="#ffffff">-- V</text>
+      <text id="fcBattVoltBelow" x="400" y="338" text-anchor="middle" font-size="11" font-weight="600" fill="#ffffff">-- V</text>
 
       <!-- GRID / LOAD / PV cols + vertical dividers + horizontal rule — all pulled down together -->
       <g transform="translate(0,28)">
@@ -2023,35 +2023,35 @@ class ZeeSkyCard extends HTMLElement {
       <!-- GRID col — single power+volt by default; L1/L2/L3 sub-values when 3-phase enabled -->
       <text x="75" y="400" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">GRID</text>
       <!-- Default: power (left) + voltage (right) side-by-side on one baseline -->
-      <text id="fcGridVal" x="45" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">0 W</text>
-      <text id="fcGridVoltVal" x="112" y="421" text-anchor="middle" font-size="9" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
-      <text id="fcGridFreqVal" x="150" y="421" text-anchor="middle" font-size="9" font-weight="400" fill="rgba(180,200,230,0.45)">-- Hz</text>
+      <text id="fcGridVal" x="45" y="421" text-anchor="middle" font-size="15" font-weight="650" fill="#e0e8f0">0 W</text>
+      <text id="fcGridVoltVal" x="112" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
+      <text id="fcGridFreqVal" x="150" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- Hz</text>
       <!-- 3-phase sub-row: L1 | L2 | L3 — hidden by default, shown when _show_3phase enabled -->
       <g id="grid3PhaseVertical" display="none">
         <!-- L1 -->
         <text x="28"  y="409" font-size="6.5" fill="rgba(255,255,255,0.40)" letter-spacing="0.3" text-anchor="middle">L1</text>
-        <text id="fcGridL1Val"     x="28"  y="420" font-size="8.5" font-weight="650" fill="#e0e8f0" text-anchor="middle">-- W</text>
-        <text id="fcGridL1VoltVal" x="28"  y="430" font-size="6.5" font-weight="400" fill="rgba(180,200,230,0.45)" text-anchor="middle">-- V</text>
+        <text id="fcGridL1Val"     x="28"  y="420" font-size="10" font-weight="650" fill="#e0e8f0" text-anchor="middle">-- W</text>
+        <text id="fcGridL1VoltVal" x="28"  y="430" font-size="8" font-weight="400" fill="rgba(180,200,230,0.45)" text-anchor="middle">-- V</text>
         <!-- L2 -->
         <text x="75"  y="409" font-size="6.5" fill="rgba(255,255,255,0.40)" letter-spacing="0.3" text-anchor="middle">L2</text>
-        <text id="fcGridL2Val"     x="75"  y="420" font-size="8.5" font-weight="650" fill="#e0e8f0" text-anchor="middle">-- W</text>
-        <text id="fcGridL2VoltVal" x="75"  y="430" font-size="6.5" font-weight="400" fill="rgba(180,200,230,0.45)" text-anchor="middle">-- V</text>
+        <text id="fcGridL2Val"     x="75"  y="420" font-size="10" font-weight="650" fill="#e0e8f0" text-anchor="middle">-- W</text>
+        <text id="fcGridL2VoltVal" x="75"  y="430" font-size="8" font-weight="400" fill="rgba(180,200,230,0.45)" text-anchor="middle">-- V</text>
         <!-- L3 -->
         <text x="122" y="409" font-size="6.5" fill="rgba(255,255,255,0.40)" letter-spacing="0.3" text-anchor="middle">L3</text>
-        <text id="fcGridL3Val"     x="122" y="420" font-size="8.5" font-weight="650" fill="#e0e8f0" text-anchor="middle">-- W</text>
-        <text id="fcGridL3VoltVal" x="122" y="430" font-size="6.5" font-weight="400" fill="rgba(180,200,230,0.45)" text-anchor="middle">-- V</text>
+        <text id="fcGridL3Val"     x="122" y="420" font-size="10" font-weight="650" fill="#e0e8f0" text-anchor="middle">-- W</text>
+        <text id="fcGridL3VoltVal" x="122" y="430" font-size="8" font-weight="400" fill="rgba(180,200,230,0.45)" text-anchor="middle">-- V</text>
       </g>
 
       <!-- LOAD col — power (left) + voltage (right) side-by-side -->
       <text x="254" y="400" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">LOAD</text>
-      <text id="fcLoadVal" x="222" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">-- W</text>
-      <text id="fcLoadVoltVal" x="290" y="421" text-anchor="middle" font-size="9" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
+      <text id="fcLoadVal" x="222" y="421" text-anchor="middle" font-size="15" font-weight="650" fill="#e0e8f0">-- W</text>
+      <text id="fcLoadVoltVal" x="290" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
 
       <!-- PV col -->
       <text x="420" y="400" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.75)" letter-spacing="2.5" font-weight="570">PV</text>
       <text id="fcPvGenBelowVal" x="-999" y="-999" font-size="1" fill="none">-- kW</text>
-      <text id="fcPv1SubVal" x="${showPvExtra ? '350' : '370'}" y="421" text-anchor="middle" font-size="11" font-weight="650" fill="#e0e8f0">-- W</text>
-      <text id="fcPv2SubVal" x="${showPvExtra ? '400' : '470'}" y="421" text-anchor="middle" font-size="11" font-weight="650" fill="#e0e8f0">-- W</text>
+      <text id="fcPv1SubVal" x="${showPvExtra ? '350' : '370'}" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">-- W</text>
+      <text id="fcPv2SubVal" x="${showPvExtra ? '400' : '470'}" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">-- W</text>
       ${pv3txt}${pv4txt}
 
       <!-- Horizontal rule — floor of table row -->
@@ -3541,6 +3541,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.6.20',
+  version: '2.6.21',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
