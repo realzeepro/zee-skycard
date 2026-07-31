@@ -2,11 +2,11 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.8.0**
+`zee-skycard.js` · Sky Edition **v2.8.1**
 <img width="1419" height="2405" alt="Screenshot_2026-06-02-11-05-46-70_cbf47468f7ecfbd8ebcc46bf9cc626da" src="https://github.com/user-attachments/assets/9300fcb5-4b67-4eb7-8099-02701e8a5890" />
 
 
-> **Origin:** `zee-skycard` is a full visual overhaul of [`k-flow-card`](https://github.com/realzeepro/k-flow-card) and lives in its own separate repository. It shares the same entity schema and visual editor but replaces the entire SVG canvas with a photographic background system and redesigned celestial / inverter visuals.
+> **Origin:** `zee-skycard` is a full visual overhaul of [`khan-skycard`](https://github.com/thekhan1122/khan-skycard) by [thekhan1122](https://github.com/thekhan1122), and lives in its own separate repository. It shares the same entity schema and visual editor but replaces the entire SVG canvas with a photographic background system and redesigned celestial / inverter visuals.
 
 ---
 
@@ -336,6 +336,17 @@ zee-skycard.js
 
 ---
 
+## Credits
+
+This project is a fork and full visual overhaul of:
+
+- **[khan-skycard](https://github.com/thekhan1122/khan-skycard)** by [thekhan1122](https://github.com/thekhan1122) — the original card this project builds on (entity schema, visual editor, and base design).
+- **[k-flow-card](https://github.com/realzeepro/k-flow-card)** — upstream entity schema and editor lineage.
+
+Huge thanks to the original author for the foundation.
+
+---
+
 ## Changelog
 
 ### v1.0.0-pre *(this release)*
@@ -450,4 +461,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.8.0*
+*Zee Energy · zee-skycard · Sky Edition v2.8.1*

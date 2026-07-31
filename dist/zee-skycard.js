@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.8.0
+// zee-skycard.js – Sky Edition v2.8.1
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1349,7 +1349,7 @@ class ZeeSkyCard extends HTMLElement {
       tMoon = Math.max(0, Math.min(1, tMoon));
     // Moon direction: rises east (right side at sunset), sets west (left side at sunrise)
     // tMoon=0 = just after sunset (right/east horizon), tMoon=1 = just before sunrise (left/west horizon)
-      mx = Math.round((1 - tMoon) * (1 - tMoon) * 42 + 2 * (1 - tMoon) * tMoon * 260 + tMoon * tMoon * 500);
+      mx = Math.round((1 - tMoon) * (1 - tMoon) * 500 + 2 * (1 - tMoon) * tMoon * 260 + tMoon * tMoon * 42);
       my = Math.round((1 - tMoon) * (1 - tMoon) * 161 + 2 * (1 - tMoon) * tMoon * 85 + tMoon * tMoon * 161);
     }
     return { rise, set, night, bell, bx, by, mx, my, t };
@@ -1742,6 +1742,7 @@ class ZeeSkyCard extends HTMLElement {
     const st = eid && this._hass?.states[eid] ? this._hass.states[eid] : null;
     const t = st ? parseFloat(st.attributes?.temperature || st.state) : null;
     const ct = st ? parseFloat(st.attributes?.current_temperature) : null;
+    const hu = st ? parseFloat(st.attributes?.current_humidity) : null;
     const hv = st?.state || 'off';
     const fm = st?.attributes?.fan_mode || '';
     const sw = st?.attributes?.swing_mode || '';
@@ -1750,19 +1751,33 @@ class ZeeSkyCard extends HTMLElement {
     const fans = st?.attributes?.fan_modes || [];
     const swings = st?.attributes?.swing_modes || [];
     const tv = t !== null && !isNaN(t) ? t : 24;
-    const ctH = ct !== null && !isNaN(ct) ? `<span style="font-size:.72rem;color:rgba(200,215,235,0.4)"> (${ct.toFixed(1)}°C indoors)</span>` : '';
     const chip = (l, active, onclick) =>
       `<span style="display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;border:1px solid rgba(255,255,255,0.12);background:${active ? '#03a9f4' : 'rgba(255,255,255,0.05)'};border-color:${active ? '#03a9f4' : 'rgba(255,255,255,0.12)'};color:${active ? '#fff' : '#c9d1d9'}" onclick="${onclick.replace(/"/g,'&quot;')}">${l}</span>`;
-    this._popup(this._popupClose() + this._popupTitle('🌡️ ' + name + ctH) +
-      `<div style="text-align:center;margin-bottom:14px">
-        <div style="font-size:2.2rem;font-weight:650;color:#e0e8f0">${tv.toFixed(1)}°C</div>
-        <div style="font-size:.68rem;color:rgba(200,215,235,0.4);text-transform:uppercase;letter-spacing:1px">Set Temperature</div>
-        <div style="display:flex;align-items:center;gap:4px;justify-content:center;margin-top:6px">
+    const metric = (icon, label, value, clr) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center">
+      <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
+      <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
+    </div>`;
+    this._popup(this._popupClose() + this._popupTitle('🌡️ Climate') +
+      `<div style="background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-size:1.1rem;line-height:1;flex-shrink:0">🌡️</span>
+            <span style="font-size:.95rem;font-weight:650;color:#e0e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+            <span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;background:${on ? 'rgba(243,156,75,0.18)' : 'rgba(255,255,255,0.06)'};color:${on ? '#f39c4b' : 'rgba(200,215,235,0.5)'}">${on ? (hv.toUpperCase()) : 'OFF'}</span>
+          </div>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;border:1px solid rgba(255,255,255,0.12);background:${on ? '#03a9f4' : 'rgba(255,255,255,0.05)'};border-color:${on ? '#03a9f4' : 'rgba(255,255,255,0.12)'};color:${on ? '#fff' : '#c9d1d9'}" onclick="const o=this.closest('[data-host]')._cardHost;if(o&&o._hass)o._hass.callService('climate','toggle',{entity_id:'${eid}'});this.style.background=this.style.background==='rgb(3, 169, 244)'?'rgba(255,255,255,0.05)':'#03a9f4';this.style.color=this.style.color==='rgb(255, 255, 255)'?'#c9d1d9':'#fff';this.style.borderColor=this.style.borderColor==='rgb(3, 169, 244)'?'rgba(255,255,255,0.12)':'#03a9f4';this.textContent=this.textContent==='✓ ON'?'OFF':'✓ ON'">${on ? '✓ ON' : 'OFF'}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr ${hu !== null && !isNaN(hu) ? '1fr' : '1fr'};gap:8px">
+          ${metric('🌡️', 'Current', ct !== null && !isNaN(ct) ? ct.toFixed(1) + ' °C' : '-- °C', '#29b6f6')}
+          ${metric('🎚️', 'Set', tv.toFixed(1) + ' °C', '#f39c4b')}
+          ${hu !== null && !isNaN(hu) ? metric('💧', 'Humidity', hu.toFixed(0) + ' %', '#4ade80') : ''}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:12px">
           <button style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="
             const o=this.parentElement.closest('[data-host]')._cardHost;
             if(o&&o._hass)o._hass.callService('climate','set_temperature',{entity_id:'${eid}',temperature:${(tv-1).toFixed(1)}});
             this.nextElementSibling.textContent=(${(tv-1).toFixed(1)})+'°C'">&minus;</button>
-          <span style="min-width:40px;text-align:center;font-size:1rem;font-weight:650;color:#e0e8f0">${tv.toFixed(1)}°C</span>
+          <span style="min-width:44px;text-align:center;font-size:1rem;font-weight:650;color:#e0e8f0">${tv.toFixed(1)}°C</span>
           <button style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="
             const o=this.parentElement.closest('[data-host]')._cardHost;
             if(o&&o._hass)o._hass.callService('climate','set_temperature',{entity_id:'${eid}',temperature:${(tv+1).toFixed(1)}});
@@ -1782,10 +1797,7 @@ class ZeeSkyCard extends HTMLElement {
           swings.map(s => chip(s, sw === s,
             `const o=this.closest('[data-host]')._cardHost;if(o&&o._hass)o._hass.callService('climate','set_swing_mode',{entity_id:'${eid}',swing_mode:'${s}'});this.parentElement.querySelectorAll('[data-chip]').forEach(c=>c.style.background='rgba(255,255,255,0.05)');this.style.background='#03a9f4';this.style.color='#fff';this.style.borderColor='#03a9f4'`)).join('')
         }</div>` : ''
-      }
-      <div style="margin-top:12px;display:flex;justify-content:center">
-        <span style="display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;border:1px solid rgba(255,255,255,0.12);background:${on ? '#03a9f4' : 'rgba(255,255,255,0.05)'};border-color:${on ? '#03a9f4' : 'rgba(255,255,255,0.12)'};color:${on ? '#fff' : '#c9d1d9'}" onclick="const o=this.closest('[data-host]')._cardHost;if(o&&o._hass)o._hass.callService('climate','toggle',{entity_id:'${eid}'});this.style.background=this.style.background==='rgb(3, 169, 244)'?'rgba(255,255,255,0.05)':'#03a9f4';this.style.color=this.style.color==='rgb(255, 255, 255)'?'#c9d1d9':'#fff';this.style.borderColor=this.style.borderColor==='rgb(3, 169, 244)'?'rgba(255,255,255,0.12)':'#03a9f4';this.textContent=this.textContent==='✓ ON'?'OFF':'✓ ON'">${on ? '✓ ON' : 'OFF'}</span>
-      </div>`);
+      }`);
   }
 
   _openRoomsPopup() {
@@ -3631,6 +3643,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.8.0',
+  version: '2.8.1',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
