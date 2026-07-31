@@ -2,8 +2,9 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.8.3**
-<img width="1419" height="2405" alt="Screenshot_2026-06-02-11-05-46-70_cbf47468f7ecfbd8ebcc46bf9cc626da" src="https://github.com/user-attachments/assets/9300fcb5-4b67-4eb7-8099-02701e8a5890" />
+`zee-skycard.js` · Sky Edition **v2.8.4**
+
+![Zee Skycard](Screenshot%20-%20skycard.png)
 
 
 > **Origin:** `zee-skycard` is forked from [`khan-skycard`](https://github.com/thekhan1122/khan-skycard) by [thekhan1122](https://github.com/thekhan1122) and has been updated and customized for **Zee's Home** setup. It lives in its own separate repository, replacing the entire SVG canvas with a photographic background system and redesigned celestial / inverter visuals.
@@ -264,6 +265,10 @@ Temperature colour follows the threshold system; the battery chip turns orange �
 
 The **System**, **Smart Plugs**, and **Climate** popups open from their respective monitoring tiles when enabled.
 
+![Inverter popup card](Screenshot%20-%20inverter%20popup%20card.png)
+
+![Smart plugs popup card](Screenshot%20-%20smart%20plugs%20popup%20card.png)
+
 ---
 
 ## Colour Logic
@@ -460,4 +465,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.8.3*
+*Zee Energy · zee-skycard · Sky Edition v2.8.4*

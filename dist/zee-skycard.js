@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.8.3
+// zee-skycard.js – Sky Edition v2.8.4
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -3644,6 +3644,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.8.3',
+  version: '2.8.4',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
