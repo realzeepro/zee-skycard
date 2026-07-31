@@ -4,7 +4,7 @@
 
 `zee-skycard.js` Â· Sky Edition **v2.8.5**
 
-![Zee Skycard](screenshot-skycard.png)
+![Zee Skycard](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-skycard.png)
 
 
 > **Origin:** `zee-skycard` is forked from [`khan-skycard`](https://github.com/thekhan1122/khan-skycard) by [thekhan1122](https://github.com/thekhan1122) and has been updated and customized for **Zee's Home** setup. It lives in its own separate repository, replacing the entire SVG canvas with a photographic background system and redesigned celestial / inverter visuals.
@@ -265,9 +265,9 @@ Temperature colour follows the threshold system; the battery chip turns orange â
 
 The **System**, **Smart Plugs**, and **Climate** popups open from their respective monitoring tiles when enabled.
 
-![Inverter popup card](screenshot-inverter-popup.png)
+![Inverter popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-inverter-popup.png)
 
-![Smart plugs popup card](screenshot-smart-plugs-popup.png)
+![Smart plugs popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshot-smart-plugs-popup.png)
 
 ---
 
