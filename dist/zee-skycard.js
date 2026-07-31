@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.7.1
+// zee-skycard.js – Sky Edition v2.8.0
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -72,7 +72,9 @@ class ZeeSkyCardEditor extends HTMLElement {
         key.startsWith('_extra_tile_')   ||
         key.startsWith('_show_camera')   || key.startsWith('_show_system')    ||
         key.startsWith('_show_smartplugs') || key.startsWith('_show_climate') ||
+        key.startsWith('_show_rooms')    ||
         key.startsWith('camera_')        || key.startsWith('smart_plug_')    ||
+        key.startsWith('room_')          ||
         key.startsWith('clim_')          || key.startsWith('climate_'))
       this._render();
   }
@@ -645,6 +647,7 @@ class ZeeSkyCardEditor extends HTMLElement {
     const showSystem  = !!(cfg._show_system);
     const showPlugs   = !!(cfg._show_smartplugs);
     const showClimate = !!(cfg._show_climate);
+    const showRooms   = !!(cfg._show_rooms);
 
     shell.appendChild(makeSection('monitoring', '📡', 'Monitoring', [
       makeSection('mon_cameras', '📷', 'Cameras', [
@@ -716,6 +719,18 @@ class ZeeSkyCardEditor extends HTMLElement {
         textField('clim_ac_name', 'AC / Climate Name', 'AC'),
         picker('climate_entity', 'Climate Entity', true),
       ], { toggleKey: '_show_climate', toggleOn: showClimate, hidden: !showClimate }),
+      divider(),
+      makeSection('mon_rooms', '🏠', 'Room Sensors', [
+        textField('room_1_name', 'Room 1 Name', 'Room 1'),
+        picker('room_1_temp', 'Room 1 Temp', true),
+        picker('room_1_humidity', 'Room 1 Humidity', true),
+        picker('room_1_battery', 'Room 1 Battery', true),
+        divider(),
+        textField('room_2_name', 'Room 2 Name', 'Room 2'),
+        picker('room_2_temp', 'Room 2 Temp', true),
+        picker('room_2_humidity', 'Room 2 Humidity', true),
+        picker('room_2_battery', 'Room 2 Battery', true),
+      ], { toggleKey: '_show_rooms', toggleOn: showRooms, hidden: !showRooms }),
     ]));
 
     shell.appendChild(makeSection('ev', '🚗', 'EV / Car Charger', [
@@ -1098,6 +1113,9 @@ class ZeeSkyCard extends HTMLElement {
       smart_plug_2_entity: '', smart_plug_2_name: 'Plug 2', smart_plug_2_power: '', smart_plug_2_voltage: '', smart_plug_2_current: '',
       _show_climate: false,
       climate_entity: '', clim_ac_name: 'AC',
+      _show_rooms: false,
+      room_1_name: 'Room 1', room_1_temp: '', room_1_humidity: '', room_1_battery: '',
+      room_2_name: 'Room 2', room_2_temp: '', room_2_humidity: '', room_2_battery: '',
       // ── System monitoring entities ──
       sys_cpu_entity: '',
       sys_mem_entity: '',
@@ -1151,6 +1169,7 @@ class ZeeSkyCard extends HTMLElement {
       '_show_camera','camera_1_name','camera_2_name','camera_3_name','camera_4_name',
       '_show_system','_show_smartplugs','smart_plug_1_name','smart_plug_2_name',
       '_show_climate','clim_ac_name',
+      '_show_rooms','room_1_name','room_2_name',
       'label_cell_temp_minmax','label_bms_temp','label_cell_volt',
       'label_pv_voltage','label_remaining','label_endurance',
       'label_today_pv','label_chg_dis','label_grid_import','label_grid_export','label_today_load',
@@ -1769,6 +1788,45 @@ class ZeeSkyCard extends HTMLElement {
       </div>`);
   }
 
+  _openRoomsPopup() {
+    const rooms = [];
+    for (let i = 1; i <= 2; i++) {
+      rooms.push({
+        name:   this.config[`room_${i}_name`] || `Room ${i}`,
+        temp:   this._val(this.config[`room_${i}_temp`]),
+        hum:    this._val(this.config[`room_${i}_humidity`]),
+        batt:   this._val(this.config[`room_${i}_battery`]),
+        hasTemp: !!this.config[`room_${i}_temp`],
+      });
+    }
+    const roomMetric = (icon, label, value, clr) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center">
+      <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
+      <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
+    </div>`;
+    const rows = rooms.map((r) => {
+      const tempV = r.temp !== null ? r.temp.toFixed(1) + ' °C' : '-- °C';
+      const humV  = r.hum  !== null ? r.hum.toFixed(0) + ' %'  : '-- %';
+      const battV = r.batt !== null ? r.batt.toFixed(0) + ' %'  : '-- %';
+      const battClr = r.batt !== null ? (r.batt <= 20 ? '#ef4444' : r.batt <= 40 ? '#f59e0b' : '#4ade80') : '#8b949e';
+      return `<div style="background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-size:1.1rem;line-height:1;flex-shrink:0">🌡️</span>
+            <span style="font-size:.95rem;font-weight:650;color:#e0e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name}</span>
+            ${r.hasTemp ? '' : `<span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;background:rgba(255,255,255,0.06);color:rgba(200,215,235,0.5)">No sensor</span>`}
+          </div>
+          <span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;background:rgba(255,255,255,0.06);color:${battClr}">🔋 ${battV}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${roomMetric('🌡️', 'Temp', tempV, r.temp !== null ? this._tempColor(r.temp) : '#8b949e')}
+          ${roomMetric('💧', 'Humidity', humV, r.hum !== null ? '#29b6f6' : '#8b949e')}
+        </div>
+      </div>`;
+    }).join('');
+    this._popup(this._popupClose() + this._popupTitle('🏠 Rooms') +
+      (rows || '<div style="color:rgba(200,215,235,0.4);font-size:.8rem;text-align:center;padding:20px 0">No room sensors configured</div>'));
+  }
+
   _buildStaticSVG() {
     this._monListenersAttached = false;
     const dual = !!(this.config._show_battery2);
@@ -2217,10 +2275,10 @@ class ZeeSkyCard extends HTMLElement {
         </div>
         <div class="pvi">
           <span class="ico">🔌</span>
-          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Grid Import</span>
-          <span id="invGridImport" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
-          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Grid Export</span>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Grid Export</span>
           <span id="invGridExport" style="font-size:.72rem;font-weight:650;color:#4ade80">-- kWh</span>
+          <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Grid Import</span>
+          <span id="invGridImport" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
         </div>
         <div class="pvi">
           <span class="ico">🏡</span>
@@ -2236,7 +2294,8 @@ class ZeeSkyCard extends HTMLElement {
         const showSys = !!this.config._show_system;
         const showPlugs = !!this.config._show_smartplugs;
         const showClim  = !!this.config._show_climate;
-        if (!showCam && !showSys && !showPlugs && !showClim) return '';
+        const showRooms = !!this.config._show_rooms;
+        if (!showCam && !showSys && !showPlugs && !showClim && !showRooms) return '';
         return `
       <div class="ct">&#x2014; MONITORING</div>
       <div class="pvf" id="monRow1">${
@@ -2248,10 +2307,12 @@ class ZeeSkyCard extends HTMLElement {
       }${
         showSys ? `<div class="pvi mon-tile" data-popup="battery" style="cursor:pointer"><span class="ico">🔋</span><span class="lbl">BATTERY</span><span class="val" style="color:#3ce878;font-size:.68rem">DETAIL</span></div>` : ''
       }</div>${
-        (showPlugs || showClim) ? `<div id="monRow2"><div class="pvf" style="margin-top:6px">${
+        (showPlugs || showClim || showRooms) ? `<div id="monRow2"><div class="pvf" style="margin-top:6px">${
           showPlugs ? `<div class="pvi mon-tile" data-popup="plugs" style="cursor:pointer"><span class="ico">🔌</span><span class="lbl">SMART PLUGS</span><span class="val" style="color:#f39c4b;font-size:.68rem">CTRL</span></div>` : ''
         }${
           showClim ? `<div class="pvi mon-tile" data-popup="climate" style="cursor:pointer"><span class="ico">🌡️</span><span class="lbl" id="monClimLabel">${this.config.clim_ac_name||'CLIMATE'}</span><span class="val" style="color:#29b6f6;font-size:.68rem">CTRL</span></div>` : ''
+        }${
+          showRooms ? `<div class="pvi mon-tile" data-popup="rooms" style="cursor:pointer"><span class="ico">🏠</span><span class="lbl">ROOMS</span><span class="val" style="color:#4ade80;font-size:.68rem">TEMP</span></div>` : ''
         }</div></div>` : ''
       }`;})()}
       </div><!-- /kfc-content -->
@@ -3551,6 +3612,7 @@ class ZeeSkyCard extends HTMLElement {
             case 'battery':  this._openBatteryPopup(); break;
             case 'plugs':    this._openSmartPlugPopup(); break;
             case 'climate':  this._openClimatePopup(); break;
+            case 'rooms':    this._openRoomsPopup(); break;
           }
         });
       });
@@ -3560,7 +3622,7 @@ class ZeeSkyCard extends HTMLElement {
     if (climLbl) climLbl.textContent = this.config.clim_ac_name || 'CLIMATE';
     // Row2 visibility
     const monRow2 = getEl('monRow2');
-    if (monRow2) monRow2.style.display = (!!this.config._show_smartplugs || !!this.config._show_climate) ? '' : 'none';
+    if (monRow2) monRow2.style.display = (!!this.config._show_smartplugs || !!this.config._show_climate || !!this.config._show_rooms) ? '' : 'none';
   }
 }
 window.customCards = window.customCards || [];
@@ -3569,6 +3631,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.7.1',
+  version: '2.8.0',
 });
 customElements.define('zee-skycard', ZeeSkyCard);

@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.7.0**
+`zee-skycard.js` · Sky Edition **v2.8.0**
 <img width="1419" height="2405" alt="Screenshot_2026-06-02-11-05-46-70_cbf47468f7ecfbd8ebcc46bf9cc626da" src="https://github.com/user-attachments/assets/9300fcb5-4b67-4eb7-8099-02701e8a5890" />
 
 
@@ -217,6 +217,7 @@ All keys are configured through the visual editor. YAML equivalents are listed b
 | Monitoring: System | `+ Enable` chip | CPU, memory, temps, network, uptime |
 | Monitoring: Smart Plugs | `+ Enable` chip | Toggle plugs, power/voltage/current |
 | Monitoring: Climate | `+ Enable` chip | AC temperature and mode |
+| Monitoring: Room Sensors | `+ Enable` chip | Room temp, humidity, sensor battery |
 
 ---
 
@@ -244,6 +245,20 @@ Behavior:
 The battery popup shows full BMS telemetry, ordered: **Battery Status → SOC → Voltage → Power → Current → Cell Max V → Cell Min V → SOH → Index → BMS Version → Cell Max Temp → Cell Min Temp → BMS Temp**.
 
 The **Current (A)** entry sits right after **Power (W)** and reads `battery_current`, falling back to `goodwe_battery_curr` when set.
+
+### Rooms 🏠
+
+Enable the **Room Sensors** section to show room temperature cards (2 rooms). Each card shows the **room name**, **Temperature (°C)**, **Humidity (%)**, and the sensor **Battery (%)** chip in the header.
+
+| Key | Default | Description |
+|---|---|---|
+| `_show_rooms` | `false` | Show rooms tile (chip toggle) |
+| `room_1_name` / `room_2_name` | `Room 1` / `Room 2` | Room display name |
+| `room_1_temp` / `room_2_temp` | `''` | Room temperature entity |
+| `room_1_humidity` / `room_2_humidity` | `''` | Room humidity entity |
+| `room_1_battery` / `room_2_battery` | `''` | Sensor battery level entity |
+
+Temperature colour follows the threshold system; the battery chip turns orange ≤40% and red ≤20%.
 
 ### Others
 
@@ -435,4 +450,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.7.1*
+*Zee Energy · zee-skycard · Sky Edition v2.8.0*
