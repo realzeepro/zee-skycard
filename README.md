@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v1.1.5*
+`zee-skycard.js` · Sky Edition **v2.7.0**
 <img width="1419" height="2405" alt="Screenshot_2026-06-02-11-05-46-70_cbf47468f7ecfbd8ebcc46bf9cc626da" src="https://github.com/user-attachments/assets/9300fcb5-4b67-4eb7-8099-02701e8a5890" />
 
 
@@ -213,6 +213,41 @@ All keys are configured through the visual editor. YAML equivalents are listed b
 | Secondary Battery | `+ Enable` chip | Second pack |
 | System Limits | `+ Enable` chip | Capacity and power limits |
 | EV / Car Charger | `+ Enable` chip | Charger state, SOC, ETA |
+| Monitoring: Cameras | `+ Enable` chip | Up to 4 live camera feeds, click to expand |
+| Monitoring: System | `+ Enable` chip | CPU, memory, temps, network, uptime |
+| Monitoring: Smart Plugs | `+ Enable` chip | Toggle plugs, power/voltage/current |
+| Monitoring: Climate | `+ Enable` chip | AC temperature and mode |
+
+---
+
+## Monitoring Popups
+
+Clickable stat tiles open popup dialogs for a closer look at live data.
+
+### Cameras 📷
+
+Enable the **Cameras** section to show up to 4 live camera feeds (2×2 grid).
+
+| Key | Default | Description |
+|---|---|---|
+| `_show_camera` | `false` | Show cameras tile (chip toggle) |
+| `camera_1_entity` … `camera_4_entity` | `''` | Camera entity (streams via `/api/camera_proxy_stream/`) |
+| `camera_1_name` … `camera_4_name` | `Camera 1` … `Camera 4` | Camera label used only in the expanded view title |
+
+Behavior:
+- Click any camera tile to expand it to a single large view — no cropping (`object-fit: contain`, 16:9).
+- The **← Back to all cameras** button returns to the grid.
+- Tiles show no persistent labels; the camera name appears only in the expanded view title.
+
+### Battery 🔋
+
+The battery popup shows full BMS telemetry, ordered: **Battery Status → SOC → Voltage → Power → Current → Cell Max V → Cell Min V → SOH → Index → BMS Version → Cell Max Temp → Cell Min Temp → BMS Temp**.
+
+The **Current (A)** entry sits right after **Power (W)** and reads `battery_current`, falling back to `goodwe_battery_curr` when set.
+
+### Others
+
+The **System**, **Smart Plugs**, and **Climate** popups open from their respective monitoring tiles when enabled.
 
 ---
 
