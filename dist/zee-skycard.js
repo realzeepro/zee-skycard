@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.1
+// zee-skycard.js – Sky Edition v2.9.2
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1954,7 +1954,6 @@ class ZeeSkyCard extends HTMLElement {
       .ct{font-size:.65rem;font-weight:650;letter-spacing:2.5px;text-transform:uppercase;color:#f39c4b;display:flex;align-items:center;gap:8px}
       .ct::after{content:'';flex:1;height:1px;background:rgba(243,156,75,0.22)}
       .pvf{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:2px}
-      .pvf-auto{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:6px;margin-bottom:2px}
       .pvi{text-align:center;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
       .pvi .ico{font-size:1.7rem;margin-bottom:2px;display:block;text-align:center}
       .pvi .lbl{font-size:var(--kfc-label-size,.58rem);color:rgba(200,215,235,0.65);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:2px;display:block;text-align:center}
@@ -2331,7 +2330,7 @@ class ZeeSkyCard extends HTMLElement {
         if (!showCam && !showSys && !showPlugs && !showClim && !showRooms) return '';
         return `
       <div class="ct">&#x2014; MONITORING</div>
-      <div class="pvf pvf-auto" id="monRow1">${
+      <div class="pvf" id="monRow1">${
         showCam ? `<div class="pvi mon-tile" data-popup="camera" style="cursor:pointer"><span class="ico">📷</span><span class="lbl">CAMERAS</span><span class="val" style="color:#4ade80;font-size:.68rem">LIVE</span></div>` : ''
       }${
         showSys ? `<div class="pvi mon-tile" data-popup="system" style="cursor:pointer"><span class="ico">🖥️</span><span class="lbl">SYSTEM</span><span class="val" style="color:#58a6ff;font-size:.68rem">STATS</span></div>` : ''
@@ -2340,7 +2339,7 @@ class ZeeSkyCard extends HTMLElement {
       }${
         showSys ? `<div class="pvi mon-tile" data-popup="battery" style="cursor:pointer"><span class="ico">🔋</span><span class="lbl">BATTERY</span><span class="val" style="color:#3ce878;font-size:.68rem">DETAIL</span></div>` : ''
       }</div>${
-        (showPlugs || showClim || showRooms) ? `<div id="monRow2"><div class="pvf pvf-auto" style="margin-top:6px">${
+        (showPlugs || showClim || showRooms) ? `<div id="monRow2"><div class="pvf" style="margin-top:6px">${
           showPlugs ? `<div class="pvi mon-tile" data-popup="plugs" style="cursor:pointer"><span class="ico">🔌</span><span class="lbl">SMART PLUGS</span><span class="val" style="color:#f39c4b;font-size:.68rem">CTRL</span></div>` : ''
         }${
           showClim ? `<div class="pvi mon-tile" data-popup="climate" style="cursor:pointer"><span class="ico">🌡️</span><span class="lbl" id="monClimLabel">${this.config.clim_ac_name||'CLIMATE'}</span><span class="val" style="color:#29b6f6;font-size:.68rem">CTRL</span></div>` : ''
@@ -3667,6 +3666,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.1',
+  version: '2.9.2',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
