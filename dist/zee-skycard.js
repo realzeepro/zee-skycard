@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.7
+// zee-skycard.js – Sky Edition v2.9.8
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -754,7 +754,7 @@ class ZeeSkyCardEditor extends HTMLElement {
       ], { toggleKey: '_show_rooms', toggleOn: showRooms, hidden: !showRooms }),
       divider(),
       makeSection('mon_fridge', '🧊', 'Fridge', [
-        textField('fridge_name', 'Fridge Name', 'FRIDGE'),
+        textField('fridge_name', 'Fridge Name', 'Haier 538 IOT'),
         picker('fridge_current_temp', 'Fridge Current Temp', true),
         picker('fridge_set_temp', 'Fridge Set Temp', true),
         picker('freezer_current_temp', 'Freezer Current Temp', true),
@@ -1149,7 +1149,7 @@ class ZeeSkyCard extends HTMLElement {
       room_1_name: 'Room 1', room_1_temp: '', room_1_humidity: '', room_1_battery: '',
       room_2_name: 'Room 2', room_2_temp: '', room_2_humidity: '', room_2_battery: '',
       _show_fridge: false,
-      fridge_name: 'FRIDGE',
+      fridge_name: 'Haier 538 IOT',
       fridge_current_temp: '', fridge_set_temp: '', freezer_current_temp: '', freezer_set_temp: '',
       fridge_mode: '', fridge_door: '', freezer_door: '',
       // ── System monitoring entities ──
@@ -1919,7 +1919,7 @@ class ZeeSkyCard extends HTMLElement {
   }
 
   _openFridgePopup() {
-    const name = this.config.fridge_name || 'FRIDGE';
+    const name = this.config.fridge_name || 'Haier 538 IOT';
     const v = (e) => { const r = this._val(e); return r !== null && !isNaN(r) ? r : null; };
     const s = (e) => { const r = this._strVal(e); return r || null; };
     const fc = v(this.config.fridge_current_temp);
@@ -1944,25 +1944,33 @@ class ZeeSkyCard extends HTMLElement {
       const clr = !d.known ? '#8b949e' : d.open ? '#ef4444' : '#4ade80';
       return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:.62rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:4px 12px;border-radius:20px;cursor:${eid ? 'pointer' : 'default'};user-select:none;border:1px solid ${d.open ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.12)'};background:rgba(255,255,255,0.05);color:${clr}"${eid ? ` data-eid="${eid}"` : ''}>${label} ${d.txt}</span>`;
     };
-    this._popup(this._popupClose() + this._popupTitle('🧊 Fridge') +
-      `<div style="background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:10px">
+    const compartment = (icon, label, curVal, setVal, curEid, setEid, doorEid) => `
+      <div style="background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:8px;min-width:0">
-            <span style="font-size:1.1rem;line-height:1;flex-shrink:0">🧊</span>
-            <span style="font-size:.95rem;font-weight:650;color:#e0e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
-            ${mode ? `<span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;cursor:${this.config.fridge_mode ? 'pointer' : 'default'};background:rgba(88,166,255,0.12);color:#58a6ff"${this.config.fridge_mode ? ` data-eid="${this.config.fridge_mode}"` : ''}>${String(mode).replace(/_/g, ' ').toUpperCase()}</span>` : ''}
+            <span style="font-size:1.05rem;line-height:1;flex-shrink:0">${icon}</span>
+            <span style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#e0e8f0">${label}</span>
           </div>
-          ${doorChip('🚪', this.config.fridge_door)}
+          ${doorChip('🚪', doorEid)}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          ${metric('🧊', 'Fridge Temp', fc !== null ? fc.toFixed(1) + ' °C' : '-- °C', tempColor(fc), this.config.fridge_current_temp)}
-          ${metric('🎚️', 'Fridge Set', fs !== null ? fs.toFixed(1) + ' °C' : '-- °C', fs !== null ? '#f39c4b' : '#8b949e', this.config.fridge_set_temp)}
-          ${metric('🧊', 'Freezer Temp', zc !== null ? zc.toFixed(1) + ' °C' : '-- °C', tempColor(zc), this.config.freezer_current_temp)}
-          ${metric('🎚️', 'Freezer Set', zs !== null ? zs.toFixed(1) + ' °C' : '-- °C', zs !== null ? '#f39c4b' : '#8b949e', this.config.freezer_set_temp)}
+          ${metric('🌡️', 'Current', curVal !== null ? curVal.toFixed(1) + ' °C' : '-- °C', tempColor(curVal), curEid)}
+          ${metric('🎚️', 'Target', setVal !== null ? setVal.toFixed(1) + ' °C' : '-- °C', setVal !== null ? '#f39c4b' : '#8b949e', setEid)}
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px">
-          ${doorChip('🧊 FREEZER DOOR', this.config.freezer_door)}
+      </div>`;
+    this._popup(this._popupClose() + this._popupTitle('🗄️ Refrigerator') +
+      `<div style="background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-size:1.1rem;line-height:1;flex-shrink:0">🗄️</span>
+            <span style="font-size:.95rem;font-weight:650;color:#e0e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+          </div>
+          ${mode ? `<span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;cursor:${this.config.fridge_mode ? 'pointer' : 'default'};background:rgba(88,166,255,0.12);color:#58a6ff"${this.config.fridge_mode ? ` data-eid="${this.config.fridge_mode}"` : ''}>${String(mode).replace(/_/g, ' ').toUpperCase()}</span>` : ''}
         </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${compartment('❄️', 'Freezer', zc, zs, this.config.freezer_current_temp, this.config.freezer_set_temp, this.config.freezer_door)}
+        ${compartment('🗄️', 'Fridge', fc, fs, this.config.fridge_current_temp, this.config.fridge_set_temp, this.config.fridge_door)}
       </div>`);
   }
 
@@ -2460,7 +2468,7 @@ class ZeeSkyCard extends HTMLElement {
         }${
           showRooms ? `<div class="pvi mon-tile" data-popup="rooms" style="cursor:pointer"><span class="ico">🏠</span><span class="lbl">ROOMS</span><span class="val" style="color:#4ade80;font-size:.68rem">TEMP</span></div>` : ''
         }${
-          showFridge ? `<div class="pvi mon-tile" data-popup="fridge" style="cursor:pointer"><span class="ico">🧊</span><span class="lbl" id="monFridgeLabel">${this.config.fridge_name||'FRIDGE'}</span><span class="val" style="color:#29b6f6;font-size:.68rem">COLD</span></div>` : ''
+          showFridge ? `<div class="pvi mon-tile" data-popup="fridge" style="cursor:pointer"><span class="ico">🗄️</span><span class="lbl" id="monFridgeLabel">${this.config.fridge_name||'Haier 538 IOT'}</span><span class="val" style="color:#29b6f6;font-size:.68rem">COLD</span></div>` : ''
         }</div></div>` : ''
       }`;})()}
       </div><!-- /kfc-content -->
@@ -3779,7 +3787,7 @@ class ZeeSkyCard extends HTMLElement {
     if (climLbl) climLbl.textContent = this.config.clim_ac_name || 'CLIMATE';
     // Refresh fridge name label
     const fridgeLbl = getEl('monFridgeLabel');
-    if (fridgeLbl) fridgeLbl.textContent = this.config.fridge_name || 'FRIDGE';
+    if (fridgeLbl) fridgeLbl.textContent = this.config.fridge_name || 'Haier 538 IOT';
     // Row2 visibility
     const monRow2 = getEl('monRow2');
     if (monRow2) monRow2.style.display = (!!this.config._show_smartplugs || !!this.config._show_climate || !!this.config._show_rooms || !!this.config._show_fridge) ? '' : 'none';
@@ -3791,6 +3799,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.7',
+  version: '2.9.8',
 });
 customElements.define('zee-skycard', ZeeSkyCard);

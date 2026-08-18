@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.9.7**
+`zee-skycard.js` · Sky Edition **v2.9.8**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -290,7 +290,7 @@ Enable the **Fridge** section to show fridge and freezer temperatures, set tempe
 | Key | Default | Description |
 |---|---|---|
 | `_show_fridge` | `false` | Show fridge tile (chip toggle) |
-| `fridge_name` | `FRIDGE` | Fridge display name |
+| `fridge_name` | `Haier 538 IOT` | Fridge display name |
 | `fridge_current_temp` | `''` | Fridge current temperature |
 | `fridge_set_temp` | `''` | Fridge set temperature |
 | `freezer_current_temp` | `''` | Freezer current temperature |
@@ -502,4 +502,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.9.7*
+*Zee Energy · zee-skycard · Sky Edition v2.9.8*
