@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.9.5**
+`zee-skycard.js` · Sky Edition **v2.9.6**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -217,6 +217,7 @@ All keys are configured through the visual editor. YAML equivalents are listed b
 | Monitoring: Smart Plugs | `+ Enable` chip | Toggle plugs, power/voltage/current |
 | Monitoring: Climate | `+ Enable` chip | AC temperature and mode |
 | Monitoring: Room Sensors | `+ Enable` chip | Room temp, humidity, sensor battery |
+| Monitoring: Fridge | `+ Enable` chip | Fridge/freezer temps, mode, door sensors |
 
 ---
 
@@ -280,6 +281,22 @@ Enable the **Room Sensors** section to show room temperature cards (2 rooms). Ea
 Temperature colour follows the threshold system; the battery chip turns orange ≤40% and red ≤20%.
 
 ![Rooms popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-rooms-popup.png)
+
+### Fridge 🧊
+
+Enable the **Fridge** section to show fridge and freezer temperatures, set temperatures, the fridge mode, and door sensor states. Door chips turn **red when open** and green when closed; every value opens the HA more-info dialog on click.
+
+| Key | Default | Description |
+|---|---|---|
+| `_show_fridge` | `false` | Show fridge tile (chip toggle) |
+| `fridge_name` | `FRIDGE` | Fridge display name |
+| `fridge_current_temp` | `''` | Fridge current temperature |
+| `fridge_set_temp` | `''` | Fridge set temperature |
+| `freezer_current_temp` | `''` | Freezer current temperature |
+| `freezer_set_temp` | `''` | Freezer set temperature |
+| `fridge_mode` | `''` | Fridge mode entity (string) |
+| `fridge_door` | `''` | Fridge door binary_sensor |
+| `freezer_door` | `''` | Freezer door binary_sensor |
 
 ### Others
 
@@ -484,4 +501,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.9.5*
+*Zee Energy · zee-skycard · Sky Edition v2.9.6*

@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.5
+// zee-skycard.js – Sky Edition v2.9.6
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -72,9 +72,10 @@ class ZeeSkyCardEditor extends HTMLElement {
         key.startsWith('_extra_tile_')   ||
         key.startsWith('_show_camera')   || key.startsWith('_show_system')    ||
         key.startsWith('_show_smartplugs') || key.startsWith('_show_climate') ||
-        key.startsWith('_show_rooms')    ||
+        key.startsWith('_show_rooms')    || key.startsWith('_show_fridge') ||
         key.startsWith('camera_')        || key.startsWith('smart_plug_')    ||
         key.startsWith('room_')          ||
+        key.startsWith('fridge_')        ||
         key.startsWith('clim_')          || key.startsWith('climate_'))
       this._render();
   }
@@ -667,6 +668,7 @@ class ZeeSkyCardEditor extends HTMLElement {
     const showPlugs   = !!(cfg._show_smartplugs);
     const showClimate = !!(cfg._show_climate);
     const showRooms   = !!(cfg._show_rooms);
+    const showFridge  = !!(cfg._show_fridge);
 
     shell.appendChild(makeSection('monitoring', '📡', 'Monitoring', [
       makeSection('mon_cameras', '📷', 'Cameras', [
@@ -750,6 +752,17 @@ class ZeeSkyCardEditor extends HTMLElement {
         picker('room_2_humidity', 'Room 2 Humidity', true),
         picker('room_2_battery', 'Room 2 Battery', true),
       ], { toggleKey: '_show_rooms', toggleOn: showRooms, hidden: !showRooms }),
+      divider(),
+      makeSection('mon_fridge', '🧊', 'Fridge', [
+        textField('fridge_name', 'Fridge Name', 'FRIDGE'),
+        picker('fridge_current_temp', 'Fridge Current Temp', true),
+        picker('fridge_set_temp', 'Fridge Set Temp', true),
+        picker('freezer_current_temp', 'Freezer Current Temp', true),
+        picker('freezer_set_temp', 'Freezer Set Temp', true),
+        picker('fridge_mode', 'Fridge Mode', true),
+        picker('fridge_door', 'Fridge Door (binary_sensor)', true),
+        picker('freezer_door', 'Freezer Door (binary_sensor)', true),
+      ], { toggleKey: '_show_fridge', toggleOn: showFridge, hidden: !showFridge }),
     ]));
 
     shell.appendChild(makeSection('ev', '🚗', 'EV / Car Charger', [
@@ -1135,6 +1148,10 @@ class ZeeSkyCard extends HTMLElement {
       _show_rooms: false,
       room_1_name: 'Room 1', room_1_temp: '', room_1_humidity: '', room_1_battery: '',
       room_2_name: 'Room 2', room_2_temp: '', room_2_humidity: '', room_2_battery: '',
+      _show_fridge: false,
+      fridge_name: 'FRIDGE',
+      fridge_current_temp: '', fridge_set_temp: '', freezer_current_temp: '', freezer_set_temp: '',
+      fridge_mode: '', fridge_door: '', freezer_door: '',
       // ── System monitoring entities ──
       sys_cpu_entity: '',
       sys_mem_entity: '',
@@ -1189,6 +1206,7 @@ class ZeeSkyCard extends HTMLElement {
       '_show_system','_show_smartplugs','smart_plug_1_name','smart_plug_2_name',
       '_show_climate','clim_ac_name',
       '_show_rooms','room_1_name','room_2_name',
+      '_show_fridge','fridge_name',
       'label_cell_temp_minmax','label_bms_temp','label_cell_volt',
       'label_pv_voltage','label_remaining','label_endurance',
       'label_today_pv','label_chg_dis','label_grid_import','label_grid_export','label_today_load',
@@ -1871,6 +1889,54 @@ class ZeeSkyCard extends HTMLElement {
       (rows || '<div style="color:rgba(200,215,235,0.4);font-size:.8rem;text-align:center;padding:20px 0">No room sensors configured</div>'));
   }
 
+  _openFridgePopup() {
+    const name = this.config.fridge_name || 'FRIDGE';
+    const v = (e) => { const r = this._val(e); return r !== null && !isNaN(r) ? r : null; };
+    const s = (e) => { const r = this._strVal(e); return r || null; };
+    const fc = v(this.config.fridge_current_temp);
+    const fs = v(this.config.fridge_set_temp);
+    const zc = v(this.config.freezer_current_temp);
+    const zs = v(this.config.freezer_set_temp);
+    const mode = s(this.config.fridge_mode);
+    const metric = (icon, label, value, clr, eid) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center${eid ? ';cursor:pointer' : ''}"${eid ? ` data-eid="${eid}"` : ''}>
+      <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
+      <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
+    </div>`;
+    const tempColor = (t) => t !== null ? (t <= -15 ? '#4ade80' : t <= 5 ? '#29b6f6' : '#f39c4b') : '#8b949e';
+    const door = (eid) => {
+      const st = s(eid);
+      if (!st) return { txt: '--', open: false, known: false };
+      const open = st === 'on' || st === 'open' || st === 'true' || st === 'yes';
+      const closed = st === 'off' || st === 'closed' || st === 'false' || st === 'no';
+      return { txt: open ? 'OPEN' : closed ? 'CLOSED' : '--', open, known: open || closed };
+    };
+    const doorChip = (label, eid) => {
+      const d = door(eid);
+      const clr = !d.known ? '#8b949e' : d.open ? '#ef4444' : '#4ade80';
+      return `<span style="display:inline-flex;align-items:center;gap:5px;font-size:.62rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:4px 12px;border-radius:20px;cursor:${eid ? 'pointer' : 'default'};user-select:none;border:1px solid ${d.open ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.12)'};background:rgba(255,255,255,0.05);color:${clr}"${eid ? ` data-eid="${eid}"` : ''}>${label} ${d.txt}</span>`;
+    };
+    this._popup(this._popupClose() + this._popupTitle('🧊 Fridge') +
+      `<div style="background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-size:1.1rem;line-height:1;flex-shrink:0">🧊</span>
+            <span style="font-size:.95rem;font-weight:650;color:#e0e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+            ${mode ? `<span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;cursor:${this.config.fridge_mode ? 'pointer' : 'default'};background:rgba(88,166,255,0.12);color:#58a6ff"${this.config.fridge_mode ? ` data-eid="${this.config.fridge_mode}"` : ''}>${String(mode).replace(/_/g, ' ').toUpperCase()}</span>` : ''}
+          </div>
+          ${doorChip('🚪', this.config.fridge_door)}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${metric('🧊', 'Fridge Temp', fc !== null ? fc.toFixed(1) + ' °C' : '-- °C', tempColor(fc), this.config.fridge_current_temp)}
+          ${metric('🎚️', 'Fridge Set', fs !== null ? fs.toFixed(1) + ' °C' : '-- °C', fs !== null ? '#f39c4b' : '#8b949e', this.config.fridge_set_temp)}
+          ${metric('🧊', 'Freezer Temp', zc !== null ? zc.toFixed(1) + ' °C' : '-- °C', tempColor(zc), this.config.freezer_current_temp)}
+          ${metric('🎚️', 'Freezer Set', zs !== null ? zs.toFixed(1) + ' °C' : '-- °C', zs !== null ? '#f39c4b' : '#8b949e', this.config.freezer_set_temp)}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px">
+          ${doorChip('🧊 FREEZER DOOR', this.config.freezer_door)}
+        </div>
+      </div>`);
+  }
+
   _buildStaticSVG() {
     this._monListenersAttached = false;
     const dual = !!(this.config._show_battery2);
@@ -2345,7 +2411,8 @@ class ZeeSkyCard extends HTMLElement {
         const showPlugs = !!this.config._show_smartplugs;
         const showClim  = !!this.config._show_climate;
         const showRooms = !!this.config._show_rooms;
-        if (!showCam && !showSys && !showPlugs && !showClim && !showRooms) return '';
+        const showFridge = !!this.config._show_fridge;
+        if (!showCam && !showSys && !showPlugs && !showClim && !showRooms && !showFridge) return '';
         return `
       <div class="ct">&#x2014; MONITORING</div>
       <div class="pvf" id="monRow1">${
@@ -2357,12 +2424,14 @@ class ZeeSkyCard extends HTMLElement {
       }${
         showSys ? `<div class="pvi mon-tile" data-popup="battery" style="cursor:pointer"><span class="ico">🔋</span><span class="lbl">BATTERY</span><span class="val" style="color:#3ce878;font-size:.68rem">DETAIL</span></div>` : ''
       }</div>${
-        (showPlugs || showClim || showRooms) ? `<div id="monRow2"><div class="pvf" style="margin-top:6px">${
+        (showPlugs || showClim || showRooms || showFridge) ? `<div id="monRow2"><div class="pvf" style="margin-top:6px">${
           showPlugs ? `<div class="pvi mon-tile" data-popup="plugs" style="cursor:pointer"><span class="ico">🔌</span><span class="lbl">SMART PLUGS</span><span class="val" style="color:#f39c4b;font-size:.68rem">CTRL</span></div>` : ''
         }${
           showClim ? `<div class="pvi mon-tile" data-popup="climate" style="cursor:pointer"><span class="ico">🌡️</span><span class="lbl" id="monClimLabel">${this.config.clim_ac_name||'CLIMATE'}</span><span class="val" style="color:#29b6f6;font-size:.68rem">CTRL</span></div>` : ''
         }${
           showRooms ? `<div class="pvi mon-tile" data-popup="rooms" style="cursor:pointer"><span class="ico">🏠</span><span class="lbl">ROOMS</span><span class="val" style="color:#4ade80;font-size:.68rem">TEMP</span></div>` : ''
+        }${
+          showFridge ? `<div class="pvi mon-tile" data-popup="fridge" style="cursor:pointer"><span class="ico">🧊</span><span class="lbl" id="monFridgeLabel">${this.config.fridge_name||'FRIDGE'}</span><span class="val" style="color:#29b6f6;font-size:.68rem">COLD</span></div>` : ''
         }</div></div>` : ''
       }`;})()}
       </div><!-- /kfc-content -->
@@ -3671,6 +3740,7 @@ class ZeeSkyCard extends HTMLElement {
             case 'plugs':    this._openSmartPlugPopup(); break;
             case 'climate':  this._openClimatePopup(); break;
             case 'rooms':    this._openRoomsPopup(); break;
+            case 'fridge':   this._openFridgePopup(); break;
           }
         });
       });
@@ -3678,9 +3748,12 @@ class ZeeSkyCard extends HTMLElement {
     // Refresh climate name label
     const climLbl = getEl('monClimLabel');
     if (climLbl) climLbl.textContent = this.config.clim_ac_name || 'CLIMATE';
+    // Refresh fridge name label
+    const fridgeLbl = getEl('monFridgeLabel');
+    if (fridgeLbl) fridgeLbl.textContent = this.config.fridge_name || 'FRIDGE';
     // Row2 visibility
     const monRow2 = getEl('monRow2');
-    if (monRow2) monRow2.style.display = (!!this.config._show_smartplugs || !!this.config._show_climate || !!this.config._show_rooms) ? '' : 'none';
+    if (monRow2) monRow2.style.display = (!!this.config._show_smartplugs || !!this.config._show_climate || !!this.config._show_rooms || !!this.config._show_fridge) ? '' : 'none';
   }
 }
 window.customCards = window.customCards || [];
@@ -3689,6 +3762,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.5',
+  version: '2.9.6',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
