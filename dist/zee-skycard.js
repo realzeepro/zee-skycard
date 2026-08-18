@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.8
+// zee-skycard.js – Sky Edition v2.9.9
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1968,7 +1968,7 @@ class ZeeSkyCard extends HTMLElement {
           ${mode ? `<span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;cursor:${this.config.fridge_mode ? 'pointer' : 'default'};background:rgba(88,166,255,0.12);color:#58a6ff"${this.config.fridge_mode ? ` data-eid="${this.config.fridge_mode}"` : ''}>${String(mode).replace(/_/g, ' ').toUpperCase()}</span>` : ''}
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr;gap:10px">
         ${compartment('❄️', 'Freezer', zc, zs, this.config.freezer_current_temp, this.config.freezer_set_temp, this.config.freezer_door)}
         ${compartment('🗄️', 'Fridge', fc, fs, this.config.fridge_current_temp, this.config.fridge_set_temp, this.config.fridge_door)}
       </div>`);
@@ -3799,6 +3799,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.8',
+  version: '2.9.9',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
