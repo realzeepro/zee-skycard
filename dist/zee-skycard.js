@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.4
+// zee-skycard.js – Sky Edition v2.9.5
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1715,11 +1715,16 @@ class ZeeSkyCard extends HTMLElement {
       const power = this._val(this.config[`smart_plug_${i}_power`]);
       const volt = this._val(this.config[`smart_plug_${i}_voltage`]);
       const current = this._val(this.config[`smart_plug_${i}_current`]);
-      plugs.push({ name, eid, isOn, power, volt, current });
+      plugs.push({
+        name, eid, isOn, power, volt, current,
+        powerEid: this.config[`smart_plug_${i}_power`],
+        voltEid:  this.config[`smart_plug_${i}_voltage`],
+        curEid:   this.config[`smart_plug_${i}_current`],
+      });
     }
     const assigned = plugs.filter(p => p.eid);
     // One metric stat block (larger, labelled) inside a plug card
-    const plugMetric = (icon, label, value, clr) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center">
+    const plugMetric = (icon, label, value, clr, eid) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center${eid ? ';cursor:pointer' : ''}"${eid ? ` data-eid="${eid}"` : ''}>
       <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
       <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
     </div>`;
@@ -1746,9 +1751,9 @@ class ZeeSkyCard extends HTMLElement {
           </label>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          ${plugMetric('⚡', 'Power', pwrV, '#f39c4b')}
-          ${plugMetric('🔌', 'Voltage', vltV, '#29b6f6')}
-          ${plugMetric('〰️', 'Current', curV, '#4ade80')}
+          ${plugMetric('⚡', 'Power', pwrV, '#f39c4b', p.powerEid)}
+          ${plugMetric('🔌', 'Voltage', vltV, '#29b6f6', p.voltEid)}
+          ${plugMetric('〰️', 'Current', curV, '#4ade80', p.curEid)}
         </div>
       </div>`;
     }).join('');
@@ -1775,7 +1780,7 @@ class ZeeSkyCard extends HTMLElement {
     const tv = t !== null && !isNaN(t) ? t : 24;
     const chip = (l, active, onclick) =>
       `<span style="display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;border:1px solid rgba(255,255,255,0.12);background:${active ? '#03a9f4' : 'rgba(255,255,255,0.05)'};border-color:${active ? '#03a9f4' : 'rgba(255,255,255,0.12)'};color:${active ? '#fff' : '#c9d1d9'}" onclick="${onclick.replace(/"/g,'&quot;')}">${l}</span>`;
-    const metric = (icon, label, value, clr) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center">
+    const metric = (icon, label, value, clr, eid) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center${eid ? ';cursor:pointer' : ''}"${eid ? ` data-eid="${eid}"` : ''}>
       <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
       <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
     </div>`;
@@ -1790,9 +1795,9 @@ class ZeeSkyCard extends HTMLElement {
           <span style="display:inline-flex;align-items:center;gap:5px;font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s;user-select:none;border:1px solid rgba(255,255,255,0.12);background:${on ? '#03a9f4' : 'rgba(255,255,255,0.05)'};border-color:${on ? '#03a9f4' : 'rgba(255,255,255,0.12)'};color:${on ? '#fff' : '#c9d1d9'}" onclick="const o=this.closest('[data-host]')._cardHost;if(o&&o._hass)o._hass.callService('climate','toggle',{entity_id:'${eid}'});this.style.background=this.style.background==='rgb(3, 169, 244)'?'rgba(255,255,255,0.05)':'#03a9f4';this.style.color=this.style.color==='rgb(255, 255, 255)'?'#c9d1d9':'#fff';this.style.borderColor=this.style.borderColor==='rgb(3, 169, 244)'?'rgba(255,255,255,0.12)':'#03a9f4';this.textContent=this.textContent==='✓ ON'?'OFF':'✓ ON'">${on ? '✓ ON' : 'OFF'}</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-          ${metric('🌡️', 'Current', ct !== null && !isNaN(ct) ? ct.toFixed(1) + ' °C' : '-- °C', '#29b6f6')}
-          ${metric('🎚️', 'Set', tv.toFixed(1) + ' °C', '#f39c4b')}
-          ${metric('💧', 'Humidity', hu !== null && !isNaN(hu) ? hu.toFixed(0) + ' %' : '-- %', hu !== null && !isNaN(hu) ? '#4ade80' : '#8b949e')}
+          ${metric('🌡️', 'Current', ct !== null && !isNaN(ct) ? ct.toFixed(1) + ' °C' : '-- °C', '#29b6f6', eid)}
+          ${metric('🎚️', 'Set', tv.toFixed(1) + ' °C', '#f39c4b', eid)}
+          ${metric('💧', 'Humidity', hu !== null && !isNaN(hu) ? hu.toFixed(0) + ' %' : '-- %', hu !== null && !isNaN(hu) ? '#4ade80' : '#8b949e', eid)}
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:12px">
           <button style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="
@@ -1833,9 +1838,12 @@ class ZeeSkyCard extends HTMLElement {
         hum:    this._val(this.config[`room_${i}_humidity`]),
         batt:   this._val(this.config[`room_${i}_battery`]),
         hasTemp: !!this.config[`room_${i}_temp`],
+        tempEid: this.config[`room_${i}_temp`],
+        humEid:  this.config[`room_${i}_humidity`],
+        battEid: this.config[`room_${i}_battery`],
       });
     }
-    const roomMetric = (icon, label, value, clr) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center">
+    const roomMetric = (icon, label, value, clr, eid) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center${eid ? ';cursor:pointer' : ''}"${eid ? ` data-eid="${eid}"` : ''}>
       <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
       <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
     </div>`;
@@ -1851,11 +1859,11 @@ class ZeeSkyCard extends HTMLElement {
             <span style="font-size:.95rem;font-weight:650;color:#e0e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name}</span>
             ${r.hasTemp ? '' : `<span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;background:rgba(255,255,255,0.06);color:rgba(200,215,235,0.5)">No sensor</span>`}
           </div>
-          <span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;background:rgba(255,255,255,0.06);color:${battClr}">🔋 ${battV}</span>
+          <span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;background:rgba(255,255,255,0.06);color:${battClr}${r.battEid ? ';cursor:pointer' : ''}"${r.battEid ? ` data-eid="${r.battEid}"` : ''}>🔋 ${battV}</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          ${roomMetric('🌡️', 'Temp', tempV, r.temp !== null ? this._tempColor(r.temp) : '#8b949e')}
-          ${roomMetric('💧', 'Humidity', humV, r.hum !== null ? '#29b6f6' : '#8b949e')}
+          ${roomMetric('🌡️', 'Temp', tempV, r.temp !== null ? this._tempColor(r.temp) : '#8b949e', r.tempEid)}
+          ${roomMetric('💧', 'Humidity', humV, r.hum !== null ? '#29b6f6' : '#8b949e', r.humEid)}
         </div>
       </div>`;
     }).join('');
@@ -3681,6 +3689,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.4',
+  version: '2.9.5',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
