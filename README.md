@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.9.9**
+`zee-skycard.js` · Sky Edition **v2.9.10**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -218,6 +218,7 @@ All keys are configured through the visual editor. YAML equivalents are listed b
 | Monitoring: Climate | `+ Enable` chip | AC temperature and mode |
 | Monitoring: Room Sensors | `+ Enable` chip | Room temp, humidity, sensor battery |
 | Monitoring: Fridge | `+ Enable` chip | Fridge/freezer temps, mode, door sensors |
+| Monitoring: Water Heater | `+ Enable` chip | Water heater temp, set temp, mode, power |
 
 ---
 
@@ -283,9 +284,9 @@ Temperature colour follows the threshold system; the battery chip turns orange �
 
 ![Rooms popup card](https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-rooms-popup.png)
 
-### Fridge 🧊
+### Fridge 🗄️
 
-Enable the **Fridge** section to show fridge and freezer temperatures, set temperatures, the fridge mode, and door sensor states. Door chips turn **red when open** and green when closed; every value opens the HA more-info dialog on click.
+Enable the **Fridge** section to show fridge and freezer temperatures, set temperatures, the fridge mode, and door sensor states. Door chips turn **red when open** and green when closed; every value opens the HA more-info dialog on click. The fridge tile shows the **current mode** (e.g. `ECO`, `SUPER COOL`) instead of a static label.
 
 | Key | Default | Description |
 |---|---|---|
@@ -298,6 +299,19 @@ Enable the **Fridge** section to show fridge and freezer temperatures, set tempe
 | `fridge_mode` | `''` | Fridge mode entity (string) |
 | `fridge_door` | `''` | Fridge door binary_sensor |
 | `freezer_door` | `''` | Freezer door binary_sensor |
+
+### Water Heater ♨️
+
+Enable the **Water Heater** section to show current/set temperature, mode, and power. Its monitoring tile **replaces the Rooms tile** whenever the water heater's current-temperature sensor is available; when the sensor is unavailable, the Water Heater tile is hidden and the Rooms tile shows normally. Every value opens the HA more-info dialog on click.
+
+| Key | Default | Description |
+|---|---|---|
+| `_show_water_heater` | `false` | Show water heater tile (chip toggle) |
+| `water_heater_name` | `Water Heater` | Water heater display name |
+| `water_heater_current_temp` | `''` | Current water temperature |
+| `water_heater_set_temp` | `''` | Target water temperature |
+| `water_heater_mode` | `''` | Water heater mode entity (string) |
+| `water_heater_power` | `''` | Water heater power (W) |
 
 ### Others
 
@@ -502,4 +516,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.9.9*
+*Zee Energy · zee-skycard · Sky Edition v2.9.10*

@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.9
+// zee-skycard.js – Sky Edition v2.9.10
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -72,10 +72,10 @@ class ZeeSkyCardEditor extends HTMLElement {
         key.startsWith('_extra_tile_')   ||
         key.startsWith('_show_camera')   || key.startsWith('_show_system')    ||
         key.startsWith('_show_smartplugs') || key.startsWith('_show_climate') ||
-        key.startsWith('_show_rooms')    || key.startsWith('_show_fridge') ||
+        key.startsWith('_show_rooms')    || key.startsWith('_show_fridge') || key.startsWith('_show_water_heater') ||
         key.startsWith('camera_')        || key.startsWith('smart_plug_')    ||
         key.startsWith('room_')          ||
-        key.startsWith('fridge_')        ||
+        key.startsWith('fridge_')        || key.startsWith('water_heater_') ||
         key.startsWith('clim_')          || key.startsWith('climate_'))
       this._render();
   }
@@ -669,6 +669,7 @@ class ZeeSkyCardEditor extends HTMLElement {
     const showClimate = !!(cfg._show_climate);
     const showRooms   = !!(cfg._show_rooms);
     const showFridge  = !!(cfg._show_fridge);
+    const showWH      = !!(cfg._show_water_heater);
 
     shell.appendChild(makeSection('monitoring', '📡', 'Monitoring', [
       makeSection('mon_cameras', '📷', 'Cameras', [
@@ -753,7 +754,7 @@ class ZeeSkyCardEditor extends HTMLElement {
         picker('room_2_battery', 'Room 2 Battery', true),
       ], { toggleKey: '_show_rooms', toggleOn: showRooms, hidden: !showRooms }),
       divider(),
-      makeSection('mon_fridge', '🧊', 'Fridge', [
+      makeSection('mon_fridge', '🗄️', 'Fridge', [
         textField('fridge_name', 'Fridge Name', 'Haier 538 IOT'),
         picker('fridge_current_temp', 'Fridge Current Temp', true),
         picker('fridge_set_temp', 'Fridge Set Temp', true),
@@ -763,6 +764,14 @@ class ZeeSkyCardEditor extends HTMLElement {
         picker('fridge_door', 'Fridge Door (binary_sensor)', true),
         picker('freezer_door', 'Freezer Door (binary_sensor)', true),
       ], { toggleKey: '_show_fridge', toggleOn: showFridge, hidden: !showFridge }),
+      divider(),
+      makeSection('mon_waterheater', '♨️', 'Water Heater', [
+        textField('water_heater_name', 'Water Heater Name', 'Water Heater'),
+        picker('water_heater_current_temp', 'Current Temp', true),
+        picker('water_heater_set_temp', 'Set Temp', true),
+        picker('water_heater_mode', 'Mode', true),
+        picker('water_heater_power', 'Power', true),
+      ], { toggleKey: '_show_water_heater', toggleOn: showWH, hidden: !showWH }),
     ]));
 
     shell.appendChild(makeSection('ev', '🚗', 'EV / Car Charger', [
@@ -1152,6 +1161,9 @@ class ZeeSkyCard extends HTMLElement {
       fridge_name: 'Haier 538 IOT',
       fridge_current_temp: '', fridge_set_temp: '', freezer_current_temp: '', freezer_set_temp: '',
       fridge_mode: '', fridge_door: '', freezer_door: '',
+      _show_water_heater: false,
+      water_heater_name: 'Water Heater',
+      water_heater_current_temp: '', water_heater_set_temp: '', water_heater_mode: '', water_heater_power: '',
       // ── System monitoring entities ──
       sys_cpu_entity: '',
       sys_mem_entity: '',
@@ -1207,6 +1219,7 @@ class ZeeSkyCard extends HTMLElement {
       '_show_climate','clim_ac_name',
       '_show_rooms','room_1_name','room_2_name',
       '_show_fridge','fridge_name',
+      '_show_water_heater','water_heater_name',
       'label_cell_temp_minmax','label_bms_temp','label_cell_volt',
       'label_pv_voltage','label_remaining','label_endurance',
       'label_today_pv','label_chg_dis','label_grid_import','label_grid_export','label_today_load',
@@ -1927,6 +1940,7 @@ class ZeeSkyCard extends HTMLElement {
     const zc = v(this.config.freezer_current_temp);
     const zs = v(this.config.freezer_set_temp);
     const mode = s(this.config.fridge_mode);
+    if (mode === 'unavailable' || mode === 'unknown') mode = null;
     const metric = (icon, label, value, clr, eid) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center${eid ? ';cursor:pointer' : ''}"${eid ? ` data-eid="${eid}"` : ''}>
       <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
       <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
@@ -1971,6 +1985,38 @@ class ZeeSkyCard extends HTMLElement {
       <div style="display:grid;grid-template-columns:1fr;gap:10px">
         ${compartment('❄️', 'Freezer', zc, zs, this.config.freezer_current_temp, this.config.freezer_set_temp, this.config.freezer_door)}
         ${compartment('🗄️', 'Fridge', fc, fs, this.config.fridge_current_temp, this.config.fridge_set_temp, this.config.fridge_door)}
+      </div>`);
+  }
+
+  _openWaterHeaterPopup() {
+    const name = this.config.water_heater_name || 'Water Heater';
+    const v = (e) => { const r = this._val(e); return r !== null && !isNaN(r) ? r : null; };
+    const s = (e) => { const r = this._strVal(e); return r || null; };
+    const ct = v(this.config.water_heater_current_temp);
+    const st = v(this.config.water_heater_set_temp);
+    const pw = v(this.config.water_heater_power);
+    let mode = s(this.config.water_heater_mode);
+    if (mode === 'unavailable' || mode === 'unknown') mode = null;
+    const metric = (icon, label, value, clr, eid) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center${eid ? ';cursor:pointer' : ''}"${eid ? ` data-eid="${eid}"` : ''}>
+      <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
+      <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
+    </div>`;
+    const tempColor = (t) => t !== null ? (t <= 35 ? '#29b6f6' : t <= 55 ? '#3fb950' : t <= 75 ? '#f39c4b' : '#ef4444') : '#8b949e';
+    const pwrV = pw !== null ? (pw >= 1000 ? (pw / 1000).toFixed(1) + ' kW' : pw.toFixed(0) + ' W') : '--';
+    this._popup(this._popupClose() + this._popupTitle('♨️ Water Heater') +
+      `<div style="background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-size:1.1rem;line-height:1;flex-shrink:0">♨️</span>
+            <span style="font-size:.95rem;font-weight:650;color:#e0e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+          </div>
+          ${mode ? `<span style="font-size:.55rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:10px;flex-shrink:0;cursor:${this.config.water_heater_mode ? 'pointer' : 'default'};background:rgba(88,166,255,0.12);color:#58a6ff"${this.config.water_heater_mode ? ` data-eid="${this.config.water_heater_mode}"` : ''}>${String(mode).replace(/_/g, ' ').toUpperCase()}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        ${metric('🌡️', 'Current', ct !== null ? ct.toFixed(1) + ' °C' : '-- °C', tempColor(ct), this.config.water_heater_current_temp)}
+        ${metric('🎚️', 'Set', st !== null ? st.toFixed(1) + ' °C' : '-- °C', st !== null ? '#f39c4b' : '#8b949e', this.config.water_heater_set_temp)}
+        ${metric('⚡', 'Power', pwrV, pw !== null ? '#f39c4b' : '#8b949e', this.config.water_heater_power)}
       </div>`);
   }
 
@@ -2449,7 +2495,8 @@ class ZeeSkyCard extends HTMLElement {
         const showClim  = !!this.config._show_climate;
         const showRooms = !!this.config._show_rooms;
         const showFridge = !!this.config._show_fridge;
-        if (!showCam && !showSys && !showPlugs && !showClim && !showRooms && !showFridge) return '';
+        const showWH = !!this.config._show_water_heater;
+        if (!showCam && !showSys && !showPlugs && !showClim && !showRooms && !showFridge && !showWH) return '';
         return `
       <div class="ct">&#x2014; MONITORING</div>
       <div class="pvf" id="monRow1">${
@@ -2461,14 +2508,16 @@ class ZeeSkyCard extends HTMLElement {
       }${
         showSys ? `<div class="pvi mon-tile" data-popup="battery" style="cursor:pointer"><span class="ico">🔋</span><span class="lbl">BATTERY</span><span class="val" style="color:#3ce878;font-size:.68rem">DETAIL</span></div>` : ''
       }</div>${
-        (showPlugs || showClim || showRooms || showFridge) ? `<div id="monRow2"><div class="pvf" style="margin-top:6px">${
+        (showPlugs || showClim || showRooms || showFridge || showWH) ? `<div id="monRow2"><div class="pvf" style="margin-top:6px">${
           showPlugs ? `<div class="pvi mon-tile" data-popup="plugs" style="cursor:pointer"><span class="ico">🔌</span><span class="lbl">SMART PLUGS</span><span class="val" style="color:#f39c4b;font-size:.68rem">CTRL</span></div>` : ''
         }${
           showClim ? `<div class="pvi mon-tile" data-popup="climate" style="cursor:pointer"><span class="ico">🌡️</span><span class="lbl" id="monClimLabel">${this.config.clim_ac_name||'CLIMATE'}</span><span class="val" style="color:#29b6f6;font-size:.68rem">CTRL</span></div>` : ''
         }${
-          showRooms ? `<div class="pvi mon-tile" data-popup="rooms" style="cursor:pointer"><span class="ico">🏠</span><span class="lbl">ROOMS</span><span class="val" style="color:#4ade80;font-size:.68rem">TEMP</span></div>` : ''
+          showRooms ? `<div class="pvi mon-tile" data-popup="rooms" style="cursor:pointer" id="monRoomsTile"><span class="ico">🏠</span><span class="lbl">ROOMS</span><span class="val" style="color:#4ade80;font-size:.68rem">TEMP</span></div>` : ''
         }${
-          showFridge ? `<div class="pvi mon-tile" data-popup="fridge" style="cursor:pointer"><span class="ico">🗄️</span><span class="lbl" id="monFridgeLabel">${this.config.fridge_name||'Haier 538 IOT'}</span><span class="val" style="color:#29b6f6;font-size:.68rem">COLD</span></div>` : ''
+          showFridge ? `<div class="pvi mon-tile" data-popup="fridge" style="cursor:pointer"><span class="ico">🗄️</span><span class="lbl" id="monFridgeLabel">${this.config.fridge_name||'Haier 538 IOT'}</span><span class="val" id="monFridgeVal" style="color:#58a6ff;font-size:.68rem">--</span></div>` : ''
+        }${
+          showWH ? `<div class="pvi mon-tile" data-popup="waterheater" style="cursor:pointer" id="monWhTile"><span class="ico">♨️</span><span class="lbl" id="monWhLabel">${this.config.water_heater_name||'WATER HEATER'}</span><span class="val" id="monWhVal" style="color:#f39c4b;font-size:.68rem">--</span></div>` : ''
         }</div></div>` : ''
       }`;})()}
       </div><!-- /kfc-content -->
@@ -3778,6 +3827,7 @@ class ZeeSkyCard extends HTMLElement {
             case 'climate':  this._openClimatePopup(); break;
             case 'rooms':    this._openRoomsPopup(); break;
             case 'fridge':   this._openFridgePopup(); break;
+            case 'waterheater': this._openWaterHeaterPopup(); break;
           }
         });
       });
@@ -3788,9 +3838,30 @@ class ZeeSkyCard extends HTMLElement {
     // Refresh fridge name label
     const fridgeLbl = getEl('monFridgeLabel');
     if (fridgeLbl) fridgeLbl.textContent = this.config.fridge_name || 'Haier 538 IOT';
+    // Refresh fridge mode value
+    const fridgeVal = getEl('monFridgeVal');
+    if (fridgeVal) {
+      const fm = this._strVal(this.config.fridge_mode);
+      fridgeVal.textContent = (fm && fm !== 'unavailable' && fm !== 'unknown') ? String(fm).replace(/_/g, ' ').toUpperCase() : '--';
+    }
+    // Water heater: show its tile in place of the Rooms tile when its sensor is available
+    const whTile = getEl('monWhTile');
+    const roomsTile = getEl('monRoomsTile');
+    if (whTile && roomsTile) {
+      const whAvail = !!this.config.water_heater_current_temp && this._val(this.config.water_heater_current_temp) !== null;
+      whTile.style.display = whAvail ? '' : 'none';
+      roomsTile.style.display = whAvail ? 'none' : '';
+      const whLbl = getEl('monWhLabel');
+      if (whLbl) whLbl.textContent = this.config.water_heater_name || 'WATER HEATER';
+      const whVal = getEl('monWhVal');
+      if (whVal) {
+        const wt = this._val(this.config.water_heater_current_temp);
+        whVal.textContent = wt !== null ? wt.toFixed(0) + ' °C' : '--';
+      }
+    }
     // Row2 visibility
     const monRow2 = getEl('monRow2');
-    if (monRow2) monRow2.style.display = (!!this.config._show_smartplugs || !!this.config._show_climate || !!this.config._show_rooms || !!this.config._show_fridge) ? '' : 'none';
+    if (monRow2) monRow2.style.display = (!!this.config._show_smartplugs || !!this.config._show_climate || !!this.config._show_rooms || !!this.config._show_fridge || !!this.config._show_water_heater) ? '' : 'none';
   }
 }
 window.customCards = window.customCards || [];
@@ -3799,6 +3870,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.9',
+  version: '2.9.10',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
