@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.6
+// zee-skycard.js – Sky Edition v2.9.7
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -1467,11 +1467,40 @@ class ZeeSkyCard extends HTMLElement {
   }
 
   // ── MONITORING: Camera stream URL ──
-  _resolveCameraStream(entityId) {
+  // Live MJPEG via HA camera proxy: sign the path through the WS auth API so the
+  // browser <img> renders a continuous multipart stream instead of a frozen frame.
+  // Resolved URLs are cached briefly so re-opening the popup doesn't re-sign/reconnect
+  // the stream every time. Falls back to a single snapshot only if signing is unavailable.
+  async _resolveCameraStream(entityId) {
     if (!entityId || !this._hass) return null;
-    const state = this._hass.states[entityId];
-    if (state?.attributes?.entity_picture) return state.attributes.entity_picture;
-    return this._hass.hassUrl(`/api/camera_proxy_stream/${entityId.replace('.', '/')}`);
+    const cache = this._camStreamCache || (this._camStreamCache = {});
+    const hit = cache[entityId];
+    if (hit && hit.expiresAt > Date.now() + 10000) return hit.url;
+    try {
+      const res = await this._hass.callWS({
+        type: 'auth/sign_path',
+        path: `/api/camera_proxy_stream/${entityId}`,
+        expires: 300,
+      });
+      if (res && res.path) {
+        const url = this._hass.hassUrl ? this._hass.hassUrl(res.path) : res.path;
+        cache[entityId] = { url, expiresAt: Date.now() + 300 * 1000 };
+        return url;
+      }
+    } catch (e) { /* fall through */ }
+    try {
+      const state = this._hass.states?.[entityId];
+      if (this._hass.getCameraProxyUrl) {
+        const url = this._hass.getCameraProxyUrl(state);
+        if (url) { cache[entityId] = { url, expiresAt: Date.now() + 60 * 1000 }; return url; }
+      }
+    } catch (e) { /* fall through */ }
+    const pic = this._hass.states?.[entityId]?.attributes?.entity_picture;
+    if (pic) {
+      const url = this._hass.auth?.applyUrlToEntityPicture ? this._hass.auth.applyUrlToEntityPicture(pic) : this._hass.hassUrl(pic);
+      if (url) { cache[entityId] = { url, expiresAt: Date.now() + 5000 }; return url; }
+    }
+    return null;
   }
 
   // ── MONITORING: Popup helpers ──
@@ -1549,12 +1578,12 @@ class ZeeSkyCard extends HTMLElement {
       <div style="font-size:1rem;font-weight:650;color:${vClr}">${value}</div></div>`;
   }
 
-  _openCameraPopup() {
+  async _openCameraPopup() {
     const cams = [];
     for (let i = 1; i <= 4; i++) {
       const eid = this.config[`camera_${i}_entity`];
       const name = this.config[`camera_${i}_name`] || `Camera ${i}`;
-      const src = eid ? this._resolveCameraStream(eid) : null;
+      const src = eid ? await this._resolveCameraStream(eid) : null;
       cams.push({ name, src, eid });
     }
     this._cams = cams;
@@ -1563,7 +1592,7 @@ class ZeeSkyCard extends HTMLElement {
       const c = cams[i] || { name:'', src:null, eid:'' };
       const showImg = c.src ? 'block' : 'none';
       const showMsg = c.src ? 'none' : 'flex';
-      const msg = c.eid ? '<span style="font-size:1.3rem">📷</span><span>Loading...</span>' : '<span style="font-size:1.3rem">📷</span><span>No camera</span>';
+      const msg = c.src ? '' : c.eid ? '<span style="font-size:1.3rem">📷</span><span>Unavailable</span>' : '<span style="font-size:1.3rem">📷</span><span>No camera</span>';
       g += `<div onclick="const o=this.closest('[data-host]')._cardHost;o._openCameraFull(${i})" style="aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);position:relative;cursor:${c.eid ? 'pointer' : 'default'}">
         <img src="${c.src || ''}" loading="lazy" style="width:100%;height:100%;object-fit:contain;display:${showImg};background:#000" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div style="display:${showMsg};align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.25);font-size:.7rem;flex-direction:column;gap:4px">${msg}</div>
@@ -1577,7 +1606,7 @@ class ZeeSkyCard extends HTMLElement {
     const c = this._cams?.[i] || { name:'', src:null, eid:'' };
     const showImg = c.src ? 'block' : 'none';
     const showMsg = c.src ? 'none' : 'flex';
-    const msg = c.eid ? '<span style="font-size:1.6rem">📷</span><span>Loading...</span>' : '<span style="font-size:1.6rem">📷</span><span>No camera</span>';
+    const msg = c.src ? '' : c.eid ? '<span style="font-size:1.6rem">📷</span><span>Unavailable</span>' : '<span style="font-size:1.6rem">📷</span><span>No camera</span>';
     this._popup(this._popupClose() + this._popupTitle('📷 ' + (c.name || '')) +
       `<div style="display:flex;flex-direction:column;gap:12px">
         <div onclick="const o=this.closest('[data-host]')._cardHost;o._openCameraPopup()" style="align-self:flex-start;font-size:.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#f39c4b;cursor:pointer;display:flex;align-items:center;gap:5px;background:rgba(243,156,75,0.10);border:1px solid rgba(243,156,75,0.25);padding:5px 12px;border-radius:8px">&larr; Back to all cameras</div>
@@ -3762,6 +3791,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.6',
+  version: '2.9.7',
 });
 customElements.define('zee-skycard', ZeeSkyCard);

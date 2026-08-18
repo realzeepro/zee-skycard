@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.9.6**
+`zee-skycard.js` · Sky Edition **v2.9.7**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -242,6 +242,7 @@ Enable the **Cameras** section to show up to 4 live camera feeds (2×2 grid).
 | `camera_1_name` … `camera_4_name` | `Camera 1` … `Camera 4` | Camera label used only in the expanded view title |
 
 Behavior:
+- Feeds stream **live** via HA's signed camera proxy (`auth/sign_path`) — the browser renders a continuous MJPEG stream, not a frozen snapshot. Falls back to a single snapshot only if signing is unavailable.
 - Click any camera tile to expand it to a single large view — no cropping (`object-fit: contain`, 16:9).
 - The **← Back to all cameras** button returns to the grid.
 - Tiles show no persistent labels; the camera name appears only in the expanded view title.
@@ -501,4 +502,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.9.6*
+*Zee Energy · zee-skycard · Sky Edition v2.9.7*
