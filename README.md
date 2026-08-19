@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.9.10**
+`zee-skycard.js` · Sky Edition **v2.9.11**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -129,6 +129,8 @@ All keys are configured through the visual editor. YAML equivalents are listed b
 | `grid_active_power` | `sensor.goodwe_active_power` | Grid active power (W) |
 | `grid_import_energy` | `sensor.goodwe_today_energy_import` | Today grid import (kWh) |
 | `grid_export_energy` | `''` | Today grid export (kWh) — optional |
+| `grid_today_import` | `sensor.goodwe_today_import_meter_calculated` | Today Import tile (kWh) |
+| `grid_today_export` | `sensor.goodwe_today_export_meter_calculated` | Today Export tile (kWh) |
 | `grid_power_alt` | `sensor.grid_phase_a_power` | Alternate grid power sensor |
 | `invert_grid_power` | `false` | Invert sign — enable if positive = exporting |
 
@@ -188,6 +190,8 @@ All keys are configured through the visual editor. YAML equivalents are listed b
 | `label_max_cell` | `Max Cell` | Tile label — max cell voltage |
 | `label_batt_dis` | `Batt Dis.` | Tile label — battery discharge |
 | `label_total_pv_gen` | `TOTAL PV GEN.` | Tile label — total PV generation |
+| `label_grid_import_today` | `Today Import` | Tile label — Today Import |
+| `label_grid_export_today` | `Today Export` | Tile label — Today Export |
 | `label_entity_cell_temp` | `''` | Override entity for cell temp tile |
 | `label_entity_bms_temp` | `''` | Override entity for BMS temp tile |
 | `label_entity_min_cell` | `''` | Override entity for min cell tile |
@@ -516,4 +520,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.9.10*
+*Zee Energy · zee-skycard · Sky Edition v2.9.11*

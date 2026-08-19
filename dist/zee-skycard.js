@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.10
+// zee-skycard.js – Sky Edition v2.9.11
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -59,16 +59,18 @@ class ZeeSkyCardEditor extends HTMLElement {
         key === '_show_inv_banner'       ||
         key === 'label_cell_temp_minmax' || key === 'label_bms_temp'        ||
         key === 'label_cell_volt'        || key === 'label_pv_voltage'      ||
-        key === 'label_remaining'        || key === 'label_endurance'       ||
+        key === 'label_endurance'       ||
         key === 'label_today_pv'         || key === 'label_chg_dis'         ||
         key === 'label_grid_import'      || key === 'label_grid_export'     ||
+        key === 'label_grid_import_today'|| key === 'label_grid_export_today' ||
         key === 'label_today_load'       ||
         key === 'label_entity_cell_temp' || key === 'label_entity_bms_temp' ||
         key === 'label_entity_cell_volt' || key === 'label_entity_pv_voltage' ||
-        key === 'label_entity_remaining' || key === 'label_entity_today_load' ||
+        key === 'label_entity_today_load' ||
         key === 'label_entity_today_pv'  || key === 'label_entity_chg_dis'  ||
         key === 'label_entity_grid_import'|| key === 'label_entity_grid_export' ||
-        key === 'grid_import_today'      ||
+        key === 'grid_import_today'      || key === 'grid_export_today'     ||
+        key === 'grid_today_import'      || key === 'grid_today_export'     ||
         key.startsWith('_extra_tile_')   ||
         key.startsWith('_show_camera')   || key.startsWith('_show_system')    ||
         key.startsWith('_show_smartplugs') || key.startsWith('_show_climate') ||
@@ -512,14 +514,12 @@ class ZeeSkyCardEditor extends HTMLElement {
     const minCellActive    = cellVoltActive; // alias for battery section lock
     const maxCellActive    = cellVoltActive; // alias for battery section lock
     const pvVoltActive     = _labelChanged('label_pv_voltage',       'PV VOLTAGE');
-    const remainActive     = _labelChanged('label_remaining',        'REMAINING');
     // Lock flags for Battery section pickers (stricter — requires entity also set)
     const cellTempLocked   = _labelLocked('label_cell_temp_minmax', 'CELL TEMP',   'label_entity_cell_temp');
     const bmsTempLocked    = _labelLocked('label_bms_temp',         'BMS TEMP',    'label_entity_bms_temp');
     const minCellLocked    = _labelLocked('label_cell_volt',        'CELL VOLT',   'label_entity_cell_volt');
     const maxCellLocked    = minCellLocked; // both use same new key
     const pvVoltLocked     = _labelLocked('label_pv_voltage',       'PV VOLTAGE',  'label_entity_pv_voltage');
-    const remainLocked     = _labelLocked('label_remaining',        'REMAINING',   'label_entity_remaining');
 
     // Label rows � text field + entity picker with live state preview
     const labelRow = (textKey, textLabel, textPlaceholder, entityKey, active = false) => {
@@ -602,6 +602,8 @@ class ZeeSkyCardEditor extends HTMLElement {
       picker('grid_power_alt',     'Grid Active Power (fallback)', true, 'Used only when the main Grid Active Power sensor is unavailable.'),
       picker('grid_voltage',       'Grid Voltage', true, 'Line voltage (V).'),
       picker('grid_frequency',     'Grid Frequency', true, 'Grid frequency (Hz).'),
+      picker('grid_today_import',  'Today Grid Import', true, 'Today grid import energy (kWh).'),
+      picker('grid_today_export',  'Today Grid Export', true, 'Today grid export energy (kWh).'),
       divider(),
       makeSection('grid3phase', '⚡', '3-Phase Breakdown', [
         picker('grid_phase_a', 'Phase L1 Power', true),
@@ -794,7 +796,8 @@ class ZeeSkyCardEditor extends HTMLElement {
       { id: 'bms_temp',    label: 'BMS Temp',    textKey: 'label_bms_temp',         def: 'BMS TEMP',    entityKey: 'label_entity_bms_temp',    active: bmsTempActive  },
       { id: 'pv_voltage',  label: 'PV Voltage',  textKey: 'label_pv_voltage',       def: 'PV VOLTAGE',  entityKey: 'label_entity_pv_voltage',  active: pvVoltActive   },
       { id: 'cell_volt',   label: 'Cell Volt',   textKey: 'label_cell_volt',        def: 'CELL VOLT',   entityKey: 'label_entity_cell_volt',   active: minCellActive && maxCellActive },
-      { id: 'remaining',   label: 'Remaining',   textKey: 'label_remaining',        def: 'REMAINING',   entityKey: 'label_entity_remaining',   active: remainActive   },
+      { id: 'grid_today_import', label: 'Today Import', textKey: 'label_grid_import_today', def: 'Today Import', entityKey: '', active: _labelChanged('label_grid_import_today', 'Today Import') },
+      { id: 'grid_today_export', label: 'Today Export', textKey: 'label_grid_export_today', def: 'Today Export', entityKey: '', active: _labelChanged('label_grid_export_today', 'Today Export') },
       { id: 'today_load',  label: 'Today Load',  textKey: 'label_today_load',       def: 'TODAY LOAD',  entityKey: 'label_entity_today_load',  active: _labelChanged('label_today_load', 'TODAY LOAD') },
     ];
 
@@ -919,7 +922,8 @@ class ZeeSkyCardEditor extends HTMLElement {
           ['label_cell_temp_size',  'Cell Temp Label'],    ['val_cell_temp_size',   'Cell Temp Value'],
           ['label_bms_temp_size',   'BMS Temp Label'],     ['val_bms_temp_size',    'BMS Temp Value'],
           ['label_cell_volt_size',  'Cell Volt Label'],    ['val_cell_volt_size',   'Cell Volt Value'],
-          ['label_remaining_size',  'Remaining Label'],    ['val_remaining_size',   'Remaining Value'],
+          ['label_grid_import_today_size','Today Import Label'], ['val_grid_import_today_size','Today Import Value'],
+          ['label_grid_export_today_size','Today Export Label'], ['val_grid_export_today_size','Today Export Value'],
           ['label_today_load_size', 'Today Load Label'],   ['val_today_load_size',  'Today Load Value'],
           ['label_grid_import_size','Grid Import Label'],  ['val_grid_import_size', 'Grid Import Value'],
           ['label_endurance_size',  'Endurance Label'],    ['val_endurance_size',   'Endurance Value'],
@@ -1070,12 +1074,13 @@ class ZeeSkyCard extends HTMLElement {
       label_bms_temp: 'BMS TEMP',
       label_endurance: 'ENDURANCE',
       label_cell_volt: 'CELL VOLT',
-      label_remaining: 'REMAINING',
       label_pv_voltage: 'PV VOLTAGE',
       label_today_pv: 'TODAY PV',
       label_chg_dis: 'CHG / DIS',
       label_grid_import: 'GRID IMPORT',
       label_grid_export: 'GRID EXPORT',
+      label_grid_import_today: 'Today Import',
+      label_grid_export_today: 'Today Export',
       label_today_load: 'TODAY LOAD',
       label_today_batt_charge: 'CHARGE',
       label_today_batt_discharge: 'DISCHARGE',
@@ -1084,7 +1089,6 @@ class ZeeSkyCard extends HTMLElement {
       label_entity_bms_temp: '',
       label_entity_cell_volt: '',
       label_entity_pv_voltage: '',
-      label_entity_remaining: '',
       label_entity_today_load: '',
       // Custom entity overrides for 4 inverter tiles
       label_entity_today_pv: '',
@@ -1100,6 +1104,8 @@ class ZeeSkyCard extends HTMLElement {
       // Grid import today
       grid_import_today: 'sensor.goodwe_today_energy_import',
       grid_export_today: 'sensor.goodwe_today_energy_export',
+      grid_today_import: 'sensor.goodwe_today_import_meter_calculated',
+      grid_today_export: 'sensor.goodwe_today_export_meter_calculated',
       grid_power_alt: 'sensor.grid_phase_a_power',
       grid_voltage: '',
       grid_frequency: '',
@@ -1122,7 +1128,8 @@ class ZeeSkyCard extends HTMLElement {
       label_cell_temp_size: 0,     val_cell_temp_size: 0,
       label_bms_temp_size: 0,      val_bms_temp_size: 0,
       label_cell_volt_size: 0,     val_cell_volt_size: 0,
-      label_remaining_size: 0,     val_remaining_size: 0,
+      label_grid_import_today_size: 0, val_grid_import_today_size: 0,
+      label_grid_export_today_size: 0, val_grid_export_today_size: 0,
       label_today_load_size: 0,    val_today_load_size: 0,
       label_grid_import_size: 0,   val_grid_import_size: 0,
       label_endurance_size: 0,     val_endurance_size: 0,
@@ -1221,8 +1228,10 @@ class ZeeSkyCard extends HTMLElement {
       '_show_fridge','fridge_name',
       '_show_water_heater','water_heater_name',
       'label_cell_temp_minmax','label_bms_temp','label_cell_volt',
-      'label_pv_voltage','label_remaining','label_endurance',
-      'label_today_pv','label_chg_dis','label_grid_import','label_grid_export','label_today_load',
+      'label_pv_voltage','label_endurance',
+      'label_today_pv','label_chg_dis','label_grid_import','label_grid_export',
+      'label_grid_import_today','label_grid_export_today',
+      'label_today_load',
       'label_entity_cell_temp','label_entity_cell_volt',
       'inverter_name',
     ];
@@ -2422,9 +2431,10 @@ class ZeeSkyCard extends HTMLElement {
           <div style="display:flex;align-items:center;gap:7px">
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">⚡</span>
             <div style="min-width:0">
-              <div class="l">${this.config.label_remaining||'REMAINING'}</div>
-              <div class="v" id="invRemCap" style="color:#3ce878;font-size:.75rem">-- Ah</div>
-              <div id="invRemKwh" style="font-size:.70rem;font-weight:400;color:rgba(160,185,220,0.55);display:none">-- kWh</div>
+              <div class="l" id="invTodayImportLbl">${this.config.label_grid_import_today||'Today Import'}</div>
+              <div class="v" id="invTodayImport" style="color:#f39c4b;font-size:.75rem">-- kWh</div>
+              <div class="l" id="invTodayExportLbl">${this.config.label_grid_export_today||'Today Export'}</div>
+              <div class="v" id="invTodayExport" style="color:#4ade80;font-size:.75rem">-- kWh</div>
             </div>
           </div>
         </div>
@@ -3400,39 +3410,11 @@ class ZeeSkyCard extends HTMLElement {
       _gridExportText = isNaN(_gev) ? _gridExportStateObj.state : ' ' + _gev.toFixed(1) + ' ' + _geu;
     }
     setText('invGridExport', _gridExportText);
-    // ── Remaining Ah + kWh ──
-    // Each battery uses its OWN Ah capacity; battery2_full_ah defaults to fullAh if not set
-    const fullAh2 = capUnit === 'ah'
-      ? (Number(this.config.battery2_full_ah) > 0 ? Number(this.config.battery2_full_ah) : fullAh)
-      : 0;
-    const remCap2 = fullAh2 > 0 ? (battSoc2 / 100) * fullAh2 : 0;
-    const totalRemAh = fullAh > 0 ? remCap1 + (dual ? remCap2 : 0) : null;
-    // kWh remaining: always SOC-based from configured capacity � never voltage-dependent
-    const totalRemKwh = fullWh > 0
-      ? ((battSoc1 / 100) * fullWh + (dual ? (battSoc2 / 100) * fullWh2 : 0)) / 1000
-      : null;
-    const invRemCapEl = getEl('invRemCap');
-    const invRemKwhEl = getEl('invRemKwh');
-    const remColor = this._remCapColor(battSoc1);
-    if (capUnit === 'ah') {
-      // Ah mode: integer, no decimal, left-padded with plain spaces to 3 chars wide
-      if (invRemCapEl) {
-        const ahInt = totalRemAh !== null ? Math.round(totalRemAh) : null;
-        invRemCapEl.textContent = ahInt !== null ? String(ahInt).padStart(3, ' ') + ' Ah' : '-- Ah';
-        invRemCapEl.style.color = remColor;
-        invRemCapEl.style.display = '';
-        invRemCapEl.style.fontVariantNumeric = 'tabular-nums';
-      }
-      if (invRemKwhEl) invRemKwhEl.style.display = 'none';
-    } else {
-      // kWh mode: always 2 decimal places, e.g. "15.92 kWh"
-      if (invRemCapEl) invRemCapEl.style.display = 'none';
-      if (invRemKwhEl) {
-        invRemKwhEl.textContent = totalRemKwh !== null ? totalRemKwh.toFixed(2) + ' kWh' : '-- kWh';
-        invRemKwhEl.style.color = remColor;
-        invRemKwhEl.style.display = '';
-      }
-    }
+    // ── Today Grid Import / Export tile ──
+    const _todayImpEntityId = this.config.grid_today_import || 'sensor.goodwe_today_import_meter_calculated';
+    const _todayExpEntityId = this.config.grid_today_export || 'sensor.goodwe_today_export_meter_calculated';
+    setText('invTodayImport', _energyText(_todayImpEntityId));
+    setText('invTodayExport', _energyText(_todayExpEntityId));
 
     // ── Label entity overrides for stat tiles ──
     // Per-row: override active only when global gate ON AND label text ≠ its default
@@ -3523,11 +3505,6 @@ class ZeeSkyCard extends HTMLElement {
     const pvVoltCustom = _rowActive('label_pv_voltage', 'PV VOLTAGE') && this.config.label_entity_pv_voltage;
     const _pvVoltRaw   = pvVoltCustom ? _readVal('label_entity_pv_voltage') : null;
     const pvVoltUnit   = pvVoltCustom ? _readUnit('label_entity_pv_voltage') : 'V';
-
-    // Remaining tile entity override
-    const remainCustom = _rowActive('label_remaining', 'REMAINING') && this.config.label_entity_remaining;
-    const _remainRaw   = remainCustom ? _readVal('label_entity_remaining') : null;
-    const remainUnit   = remainCustom ? _readUnit('label_entity_remaining') : '';
 
     // ── Apply overrides to stat tiles ──
     // Helper: apply configured font size to a tile label/value element
@@ -3640,31 +3617,9 @@ class ZeeSkyCard extends HTMLElement {
         _pvVoltTileEl.style.color = fmt.color;
         const pv2El = getEl('bPv2Volt'); if (pv2El) pv2El.textContent = '';
       }
-      if (_pvVoltTileLbl) _pvVoltTileLbl.textContent = this.config.label_pv_voltage || 'PV VOLTAGE';
+if (_pvVoltTileLbl) _pvVoltTileLbl.textContent = this.config.label_pv_voltage || 'PV VOLTAGE';
     }
 
-    // ── Remaining tile override ──
-    // Default: calculated from SOC × capacity (Ah or kWh mode).
-    // Override: when label renamed + entity picked, shows that entity value directly.
-    const _remEl  = capUnit === 'ah' ? getEl('invRemCap') : getEl('invRemKwh');
-    if (remainCustom && _remEl) {
-      if (!_remainRaw) {
-        // entity unavailable — fall back to default calculated display (already written above)
-      } else if (_remainRaw.isText) {
-        _remEl.textContent = _remainRaw.text;
-        _remEl.style.color = '#c9d1d9';
-        _remEl.style.display = '';
-        const otherEl = capUnit === 'ah' ? getEl('invRemKwh') : getEl('invRemCap');
-        if (otherEl) otherEl.style.display = 'none';
-      } else {
-        const fmt = _fmtCustom(_remainRaw.val, remainUnit);
-        _remEl.textContent = fmt.text;
-        _remEl.style.color = fmt.color;
-        _remEl.style.display = '';
-        const otherEl = capUnit === 'ah' ? getEl('invRemKwh') : getEl('invRemCap');
-        if (otherEl) otherEl.style.display = 'none';
-      }
-    }
     // ── HTML stat tile — endurance ──
     const _tillStr = this._fmtTill(endHours);
     const _bEnduStat = getEl('bEnduranceStat');
@@ -3711,14 +3666,15 @@ class ZeeSkyCard extends HTMLElement {
       _applyTileSize(_invLoadEl, 'val_today_load_size');
       _applyTileSize(_invLoadEl.closest('.st')?.querySelector('.l'), 'label_today_load_size');
     }
-    const _invRemCapEl2 = getEl('invRemCap');
-    const _invRemKwhEl2 = getEl('invRemKwh');
-    if (_invRemCapEl2) {
-      _applyTileSize(_invRemCapEl2, 'val_remaining_size');
-      _applyTileSize(_invRemCapEl2.closest('.st')?.querySelector('.l'), 'label_remaining_size');
+    const _invTodayImpEl = getEl('invTodayImport');
+    if (_invTodayImpEl) {
+      _applyTileSize(_invTodayImpEl, 'val_grid_import_today_size');
+      _applyTileSize(_invTodayImpEl.closest('.st')?.querySelector('#invTodayImportLbl'), 'label_grid_import_today_size');
     }
-    if (_invRemKwhEl2) {
-      _applyTileSize(_invRemKwhEl2, 'val_remaining_size');
+    const _invTodayExpEl = getEl('invTodayExport');
+    if (_invTodayExpEl) {
+      _applyTileSize(_invTodayExpEl, 'val_grid_export_today_size');
+      _applyTileSize(_invTodayExpEl.closest('.st')?.querySelector('#invTodayExportLbl'), 'label_grid_export_today_size');
     }
 
     // pvBlocks: update each segment directly — no innerHTML wipe, no flicker
@@ -3870,6 +3826,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.10',
+  version: '2.9.11',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
