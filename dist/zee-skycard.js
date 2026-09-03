@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.13
+// zee-skycard.js – Sky Edition v2.9.14
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -2416,13 +2416,18 @@ class ZeeSkyCard extends HTMLElement {
         </div>
         <div class="st">
           <div style="min-width:0;width:100%">
-            <div class="l" style="margin-bottom:4px">${this.config.label_pv_voltage||'PV VOLTAGE'}</div>
-            <div style="display:flex;justify-content:space-evenly;align-items:center;width:100%">
-              <span id="bPv1Volt" data-eid="${_eid('label_entity_pv_voltage','pv1_voltage')}" style="font-size:.75rem;font-weight:650;color:#ffe83c;cursor:pointer">-- V</span>
-              <span id="bPv2Volt" data-eid="${_eid('label_entity_pv_voltage','pv2_voltage')}" style="font-size:.75rem;font-weight:650;color:#ffe83c;cursor:pointer">-- V</span>
-              ${showPvExtra ? `<span id="bPv3Volt" data-eid="${this.config.pv3_voltage||''}" style="font-size:.75rem;font-weight:650;color:#ffe83c;cursor:${this.config.pv3_voltage ? 'pointer' : 'default'}">-- V</span>` : ''}
-              ${showPvExtra ? `<span id="bPv4Volt" data-eid="${this.config.pv4_voltage||''}" style="font-size:.75rem;font-weight:650;color:#ffe83c;cursor:${this.config.pv4_voltage ? 'pointer' : 'default'}">-- V</span>` : ''}
-            </div>
+            ${(this.config._labels_custom_entities && this.config.label_entity_pv_voltage) ? `
+            <div class="l">${this.config.label_pv_voltage||'PV VOLTAGE'}</div>
+            <div class="v" id="bPv1Volt" data-eid="${_eid('label_entity_pv_voltage','pv1_voltage')}" style="color:#ffe83c;font-size:.75rem;cursor:pointer">-- V</div>
+            <span id="bPv2Volt" style="display:none"></span>` : `
+            <div class="l">PV1 Voltage</div>
+            <div class="v" id="bPv1Volt" data-eid="${_eid('label_entity_pv_voltage','pv1_voltage')}" style="color:#ffe83c;font-size:.75rem;cursor:pointer">-- V</div>
+            <div class="l" style="margin-top:2px">PV2 Voltage</div>
+            <div class="v" id="bPv2Volt" data-eid="${_eid('label_entity_pv_voltage','pv2_voltage')}" style="color:#ffe83c;font-size:.75rem;cursor:pointer">-- V</div>
+            ${showPvExtra ? `<div class="l" style="margin-top:2px">PV3 Voltage</div>
+            <div class="v" id="bPv3Volt" data-eid="${this.config.pv3_voltage||''}" style="color:#ffe83c;font-size:.75rem;cursor:${this.config.pv3_voltage ? 'pointer' : 'default'}">-- V</div>` : ''}
+            ${showPvExtra ? `<div class="l" style="margin-top:2px">PV4 Voltage</div>
+            <div class="v" id="bPv4Volt" data-eid="${this.config.pv4_voltage||''}" style="color:#ffe83c;font-size:.75rem;cursor:${this.config.pv4_voltage ? 'pointer' : 'default'}">-- V</div>` : ''}`}
           </div>
         </div>
       </div>
@@ -3857,6 +3862,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.13',
+  version: '2.9.14',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
