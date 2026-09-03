@@ -2176,7 +2176,7 @@ class ZeeSkyCard extends HTMLElement {
     </style>
     <div class="kfc-shell" id="kfcShell">
       <div id="kfcSkyDiv" aria-hidden="true"></div>
-      <div id="kfcWeatherChip" style="position:absolute;top:8px;right:10px;z-index:3;display:none;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.12);color:#e0e8f0;font-size:.72rem;font-weight:650;letter-spacing:.3px;pointer-events:none"></div>
+      <div id="kfcWeatherChip" style="position:absolute;top:4px;right:10px;z-index:3;display:none;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.12);color:#e0e8f0;font-size:.72rem;font-weight:650;letter-spacing:.3px;pointer-events:none"></div>
       <div id="kfcBottomGrad" style="position:absolute;top:58%;left:0;right:0;bottom:0;pointer-events:none;z-index:0;border-radius:0 0 14px 14px;transition:background 1.4s ease"></div>
       <div class="kfc-content" style="transform:translateY(-3%)">
       <div class="ct" style="position:absolute;top:25px">&#x2014; Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
@@ -3834,7 +3834,8 @@ if (_pvVoltTileLbl) _pvVoltTileLbl.textContent = this.config.label_pv_voltage ||
         const cond = this._wxCondition();
         const wxIcon = { clear:'☀️', sunny:'☀️', partlycloudy:'⛅', cloudy:'☁️', fog:'🌫️', mist:'🌫️', rainy:'🌧️', drizzle:'🌦️', thunderstorm:'⛈️', snowy:'❄️', snow:'❄️', hail:'🌨️', windy:'💨' }[cond] || '🌤️';
         const wt = parseFloat(wSt.attributes?.temperature);
-        wxChip.textContent = wxIcon + ' ' + (isNaN(wt) ? '--°' : Math.round(wt) + '°');
+        const wh = parseFloat(wSt.attributes?.humidity);
+        wxChip.textContent = wxIcon + ' ' + (isNaN(wt) ? '--°' : Math.round(wt) + '°') + (isNaN(wh) ? '' : ' · 💧 ' + Math.round(wh) + '%');
         wxChip.style.display = 'flex';
       } else {
         wxChip.style.display = 'none';
