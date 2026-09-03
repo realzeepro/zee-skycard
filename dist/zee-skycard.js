@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.14
+// zee-skycard.js – Sky Edition v2.9.15
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -2174,6 +2174,7 @@ class ZeeSkyCard extends HTMLElement {
     </style>
     <div class="kfc-shell" id="kfcShell">
       <div id="kfcSkyDiv" aria-hidden="true"></div>
+      <div id="kfcWeatherChip" style="position:absolute;top:8px;left:10px;z-index:3;display:none;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.12);color:#e0e8f0;font-size:.72rem;font-weight:650;letter-spacing:.3px;pointer-events:none"></div>
       <div id="kfcBottomGrad" style="position:absolute;top:58%;left:0;right:0;bottom:0;pointer-events:none;z-index:0;border-radius:0 0 14px 14px;transition:background 1.4s ease"></div>
       <div class="kfc-content" style="transform:translateY(-3%)">
       <div class="ct" style="position:absolute;top:25px">&#x2014; Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
@@ -2334,9 +2335,9 @@ class ZeeSkyCard extends HTMLElement {
       <!-- GRID col — single power+volt by default; L1/L2/L3 sub-values when 3-phase enabled -->
       <text x="75" y="400" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">GRID</text>
       <!-- Default: power (left) + voltage (right) side-by-side on one baseline -->
-      <text id="fcGridVal" x="45" y="421" text-anchor="middle" font-size="15" font-weight="650" fill="#e0e8f0">0 W</text>
-      <text id="fcGridVoltVal" x="112" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
-      <text id="fcGridFreqVal" x="150" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- Hz</text>
+      <text id="fcGridVal" x="45" y="421" text-anchor="middle" font-size="15" font-weight="650" fill="#e0e8f0" data-eid="${this.config.grid_active_power||this.config.grid_power_alt||''}" style="cursor:${(this.config.grid_active_power||this.config.grid_power_alt)?'pointer':'default'}">0 W</text>
+      <text id="fcGridVoltVal" x="112" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)" data-eid="${this.config.grid_voltage||''}" style="cursor:${this.config.grid_voltage?'pointer':'default'}">-- V</text>
+      <text id="fcGridFreqVal" x="150" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)" data-eid="${this.config.grid_frequency||''}" style="cursor:${this.config.grid_frequency?'pointer':'default'}">-- Hz</text>
       <!-- 3-phase sub-row: L1 | L2 | L3 — hidden by default, shown when _show_3phase enabled -->
       <g id="grid3PhaseVertical" display="none">
         <!-- L1 -->
@@ -2355,14 +2356,14 @@ class ZeeSkyCard extends HTMLElement {
 
       <!-- LOAD col — power (left) + voltage (right) side-by-side -->
       <text x="254" y="400" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.75)" letter-spacing="1.5" font-weight="570">LOAD</text>
-      <text id="fcLoadVal" x="222" y="421" text-anchor="middle" font-size="15" font-weight="650" fill="#e0e8f0">-- W</text>
-      <text id="fcLoadVoltVal" x="290" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)">-- V</text>
+      <text id="fcLoadVal" x="222" y="421" text-anchor="middle" font-size="15" font-weight="650" fill="#e0e8f0" data-eid="${this.config.consump||''}" style="cursor:${this.config.consump?'pointer':'default'}">-- W</text>
+      <text id="fcLoadVoltVal" x="290" y="421" text-anchor="middle" font-size="11" font-weight="400" fill="rgba(180,200,230,0.45)" data-eid="${this.config.load_voltage||''}" style="cursor:${this.config.load_voltage?'pointer':'default'}">-- V</text>
 
       <!-- PV col -->
       <text x="420" y="400" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.75)" letter-spacing="2.5" font-weight="570">PV</text>
       <text id="fcPvGenBelowVal" x="-999" y="-999" font-size="1" fill="none">-- kW</text>
-      <text id="fcPv1SubVal" x="${showPvExtra ? '350' : '370'}" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">-- W</text>
-      <text id="fcPv2SubVal" x="${showPvExtra ? '400' : '470'}" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0">-- W</text>
+      <text id="fcPv1SubVal" x="${showPvExtra ? '350' : '370'}" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0" data-eid="${this.config.pv1_power||''}" style="cursor:${this.config.pv1_power?'pointer':'default'}">-- W</text>
+      <text id="fcPv2SubVal" x="${showPvExtra ? '400' : '470'}" y="421" text-anchor="middle" font-size="13" font-weight="650" fill="#e0e8f0" data-eid="${this.config.pv2_power||''}" style="cursor:${this.config.pv2_power?'pointer':'default'}">-- W</text>
       ${pv3txt}${pv4txt}
 
       <!-- Horizontal rule — floor of table row -->
@@ -2394,40 +2395,48 @@ class ZeeSkyCard extends HTMLElement {
       <!-- Row 1: CELL TEMP | BMS TEMP | PV VOLTAGE -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px">
         <div class="st">
-          <div style="min-width:0;width:100%">
-            ${(this.config._labels_custom_entities && this.config.label_entity_cell_temp) ? `
-            <div class="l">${this.config.label_cell_temp_minmax||'CELL TEMP'}</div>
-            <div class="v" id="bTemp1" data-eid="${_eid('label_entity_cell_temp','battery_temp1')}" style="color:#e0e8f0;margin-top:4px;font-size:.75rem;cursor:pointer">--</div>
-            <span id="bTemp1b" style="display:none"></span>` : `
-            <div class="l">Cell Temp MIN</div>
-            <div class="v" id="bTemp1" data-eid="${_eid('label_entity_cell_temp','battery_temp1')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- °C</div>
-            <div class="l" style="margin-top:2px">Cell Temp MAX</div>
-            <div class="v" id="bTemp1b" data-eid="${_eid('label_entity_cell_temp','battery_temp2')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- °C</div>`}
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="font-size:1.0rem;line-height:1;flex-shrink:0">&#x1F321;&#xFE0F;</span>
+            <div style="min-width:0;width:100%">
+              ${(this.config._labels_custom_entities && this.config.label_entity_cell_temp) ? `
+              <div class="l">${this.config.label_cell_temp_minmax||'CELL TEMP'}</div>
+              <div class="v" id="bTemp1" data-eid="${_eid('label_entity_cell_temp','battery_temp1')}" style="color:#e0e8f0;margin-top:4px;font-size:.75rem;cursor:pointer">--</div>
+              <span id="bTemp1b" style="display:none"></span>` : `
+              <div class="l">Cell Temp MIN</div>
+              <div class="v" id="bTemp1" data-eid="${_eid('label_entity_cell_temp','battery_temp1')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- °C</div>
+              <div class="l" style="margin-top:2px">Cell Temp MAX</div>
+              <div class="v" id="bTemp1b" data-eid="${_eid('label_entity_cell_temp','battery_temp2')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- °C</div>`}
+            </div>
           </div>
         </div>
         <div class="st stm">
           <div style="display:flex;align-items:center;gap:7px">
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">&#x1F321;&#xFE0F;</span>
             <div style="min-width:0">
-              <div class="l">${this.config.label_bms_temp||'BMS TEMP'}</div>
-              <div class="v" id="bTemp2" data-eid="${_eid('label_entity_bms_temp','battery_mos')}" style="color:#e0e8f0;font-size:.75rem;cursor:pointer">-- &#x00B0;C</div>
+              <div class="l">Inverter Temp</div>
+              <div class="v" id="bTemp2" data-eid="${this.config.inv_temp||''}" style="color:#e0e8f0;font-size:.75rem;cursor:${this.config.inv_temp?'pointer':'default'}">-- &#x00B0;C</div>
+              <div class="l" style="margin-top:2px">Radiator Temp</div>
+              <div class="v" id="bRadTemp" data-eid="${this.config.inv_rad_temp||''}" style="color:#e0e8f0;font-size:.75rem;cursor:${this.config.inv_rad_temp?'pointer':'default'}">-- &#x00B0;C</div>
             </div>
           </div>
         </div>
         <div class="st">
-          <div style="min-width:0;width:100%">
-            ${(this.config._labels_custom_entities && this.config.label_entity_pv_voltage) ? `
-            <div class="l">${this.config.label_pv_voltage||'PV VOLTAGE'}</div>
-            <div class="v" id="bPv1Volt" data-eid="${_eid('label_entity_pv_voltage','pv1_voltage')}" style="color:#ffe83c;font-size:.75rem;cursor:pointer">-- V</div>
-            <span id="bPv2Volt" style="display:none"></span>` : `
-            <div class="l">PV1 Voltage</div>
-            <div class="v" id="bPv1Volt" data-eid="${_eid('label_entity_pv_voltage','pv1_voltage')}" style="color:#ffe83c;font-size:.75rem;cursor:pointer">-- V</div>
-            <div class="l" style="margin-top:2px">PV2 Voltage</div>
-            <div class="v" id="bPv2Volt" data-eid="${_eid('label_entity_pv_voltage','pv2_voltage')}" style="color:#ffe83c;font-size:.75rem;cursor:pointer">-- V</div>
-            ${showPvExtra ? `<div class="l" style="margin-top:2px">PV3 Voltage</div>
-            <div class="v" id="bPv3Volt" data-eid="${this.config.pv3_voltage||''}" style="color:#ffe83c;font-size:.75rem;cursor:${this.config.pv3_voltage ? 'pointer' : 'default'}">-- V</div>` : ''}
-            ${showPvExtra ? `<div class="l" style="margin-top:2px">PV4 Voltage</div>
-            <div class="v" id="bPv4Volt" data-eid="${this.config.pv4_voltage||''}" style="color:#ffe83c;font-size:.75rem;cursor:${this.config.pv4_voltage ? 'pointer' : 'default'}">-- V</div>` : ''}`}
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="font-size:1.0rem;line-height:1;flex-shrink:0">☀️</span>
+            <div style="min-width:0;width:100%">
+              ${(this.config._labels_custom_entities && this.config.label_entity_pv_voltage) ? `
+              <div class="l">${this.config.label_pv_voltage||'PV VOLTAGE'}</div>
+              <div class="v" id="bPv1Volt" data-eid="${_eid('label_entity_pv_voltage','pv1_voltage')}" style="color:#ffe83c;font-size:.75rem;cursor:pointer">-- V</div>
+              <span id="bPv2Volt" style="display:none"></span>` : `
+              <div class="l">PV1 Voltage</div>
+              <div class="v" id="bPv1Volt" data-eid="${_eid('label_entity_pv_voltage','pv1_voltage')}" style="color:#ffe83c;font-size:.75rem;cursor:pointer">-- V</div>
+              <div class="l" style="margin-top:2px">PV2 Voltage</div>
+              <div class="v" id="bPv2Volt" data-eid="${_eid('label_entity_pv_voltage','pv2_voltage')}" style="color:#ffe83c;font-size:.75rem;cursor:pointer">-- V</div>
+              ${showPvExtra ? `<div class="l" style="margin-top:2px">PV3 Voltage</div>
+              <div class="v" id="bPv3Volt" data-eid="${this.config.pv3_voltage||''}" style="color:#ffe83c;font-size:.75rem;cursor:${this.config.pv3_voltage ? 'pointer' : 'default'}">-- V</div>` : ''}
+              ${showPvExtra ? `<div class="l" style="margin-top:2px">PV4 Voltage</div>
+              <div class="v" id="bPv4Volt" data-eid="${this.config.pv4_voltage||''}" style="color:#ffe83c;font-size:.75rem;cursor:${this.config.pv4_voltage ? 'pointer' : 'default'}">-- V</div>` : ''}`}
+            </div>
           </div>
         </div>
       </div>
@@ -2435,15 +2444,18 @@ class ZeeSkyCard extends HTMLElement {
       <!-- Row 2: CELL VOLT | REMAINING | TODAY Battery CHG / DIS -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
         <div class="st">
-          <div style="min-width:0;width:100%">
-            ${(this.config._labels_custom_entities && this.config.label_entity_cell_volt) ? `
-            <div class="l">${this.config.label_cell_volt||'CELL VOLT'}</div>
-            <div class="v" id="bMinCell" data-eid="${_eid('label_entity_cell_volt','battery_min_cell')}" style="color:#e0e8f0;margin-top:4px;font-size:.75rem;cursor:pointer">-- V</div>
-            <span id="bMaxCell" style="display:none"></span>` : `
-            <div class="l">Cell MIN V</div>
-            <div class="v" id="bMinCell" data-eid="${_eid('label_entity_cell_volt','battery_min_cell')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- V</div>
-            <div class="l" style="margin-top:2px">Cell Max V</div>
-            <div class="v" id="bMaxCell" data-eid="${_eid('label_entity_cell_volt','battery_max_cell')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- V</div>`}
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="font-size:1.0rem;line-height:1;flex-shrink:0">⚡</span>
+            <div style="min-width:0;width:100%">
+              ${(this.config._labels_custom_entities && this.config.label_entity_cell_volt) ? `
+              <div class="l">${this.config.label_cell_volt||'CELL VOLT'}</div>
+              <div class="v" id="bMinCell" data-eid="${_eid('label_entity_cell_volt','battery_min_cell')}" style="color:#e0e8f0;margin-top:4px;font-size:.75rem;cursor:pointer">-- V</div>
+              <span id="bMaxCell" style="display:none"></span>` : `
+              <div class="l">Cell MIN V</div>
+              <div class="v" id="bMinCell" data-eid="${_eid('label_entity_cell_volt','battery_min_cell')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- V</div>
+              <div class="l" style="margin-top:2px">Cell Max V</div>
+              <div class="v" id="bMaxCell" data-eid="${_eid('label_entity_cell_volt','battery_max_cell')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- V</div>`}
+            </div>
           </div>
         </div>
         <div class="st stm">
@@ -3516,11 +3528,6 @@ class ZeeSkyCard extends HTMLElement {
     const _cellTempRaw = cellTempCustom ? _readVal('label_entity_cell_temp') : null;
     const cellTempUnit = cellTempCustom ? _readUnit('label_entity_cell_temp') : '°C';
 
-    // BMS temp tile
-    const bmsTempCustom = _rowActive('label_bms_temp', 'BMS TEMP') && this.config.label_entity_bms_temp;
-    const _bmsTempRaw = bmsTempCustom ? _readVal('label_entity_bms_temp') : null;
-    const bmsTempUnit = bmsTempCustom ? _readUnit('label_entity_bms_temp') : '°C';
-
     // Cell Volt tile (combined MIN+MAX) — custom entity overrides both sub-values
     const cellVoltCustom = _rowActive('label_cell_volt', 'CELL VOLT') && this.config.label_entity_cell_volt;
     const _cellVoltRaw   = cellVoltCustom ? _readVal('label_entity_cell_volt') : null;
@@ -3580,23 +3587,17 @@ class ZeeSkyCard extends HTMLElement {
     }
     const _bT2o = getEl('bTemp2');
     if (_bT2o) {
-      const mosu = _unitOf(this.config.battery_mos, '°C');
-      const mos2u = _unitOf(this.config.battery2_mos, '°C');
-      if (bmsTempCustom) {
-        if (!_bmsTempRaw) {
-          _bT2o.textContent = _ft(mos1, mosu) + (dual ? ' / ' + _ft(mos2, mos2u) : '');
-          const _t2val = dual ? Math.max(_tc(mos1, mosu), _tc(mos2, mos2u)) : _tc(mos1, mosu);
-          _bT2o.style.color = _t2val >= THR.tempCrit ? '#ef4444' : _t2val >= THR.tempWarn ? '#f59e0b' : '#e0e8f0';
-        }
-        else if (_bmsTempRaw.isText) { _bT2o.textContent = _bmsTempRaw.text; _bT2o.style.color = '#c9d1d9'; }
-        else { const fmt = _fmtCustom(_bmsTempRaw.val, bmsTempUnit); _bT2o.textContent = fmt.text; _bT2o.style.color = fmt.color; }
-      } else {
-        _bT2o.textContent = _ft(mos1, mosu) + (dual ? ' / ' + _ft(mos2, mos2u) : '');
-        const _t2val = dual ? Math.max(_tc(mos1, mosu), _tc(mos2, mos2u)) : _tc(mos1, mosu);
-        _bT2o.style.color = _t2val >= THR.tempCrit ? '#ef4444' : _t2val >= THR.tempWarn ? '#f59e0b' : '#e0e8f0';
-      }
-      _applyTileSize(_bT2o, 'val_bms_temp_size');
-      _applyTileSize(_bT2o.closest('.st')?.querySelector('.l'), 'label_bms_temp_size');
+      const invU = _unitOf(this.config.inv_temp, '°C');
+      const invT = this._val(this.config.inv_temp);
+      _bT2o.textContent = invT !== null ? _ft(invT, invU) : '-- °C';
+      _bT2o.style.color = invT !== null ? this._tempColor(_tc(invT, invU)) : '#8b949e';
+    }
+    const _bRadEl = getEl('bRadTemp');
+    if (_bRadEl) {
+      const radU = _unitOf(this.config.inv_rad_temp, '°C');
+      const radT = this._val(this.config.inv_rad_temp);
+      _bRadEl.textContent = radT !== null ? _ft(radT, radU) : '-- °C';
+      _bRadEl.style.color = radT !== null ? this._tempColor(_tc(radT, radU)) : '#8b949e';
     }
     const _bMno = getEl('bMinCell');
     if (_bMno) {
@@ -3820,6 +3821,22 @@ if (_pvVoltTileLbl) _pvVoltTileLbl.textContent = this.config.label_pv_voltage ||
         });
       });
     }
+    // Weather chip (top-left): condition icon + temperature from weather_entity
+    const wxChip = getEl('kfcWeatherChip');
+    if (wxChip) {
+      const wEid = this.config.weather_entity;
+      const wSt = wEid && this._hass?.states?.[wEid];
+      const wOk = wSt && wSt.state !== 'unavailable' && wSt.state !== 'unknown';
+      if (wOk) {
+        const cond = this._wxCondition();
+        const wxIcon = { clear:'☀️', sunny:'☀️', partlycloudy:'⛅', cloudy:'☁️', fog:'🌫️', mist:'🌫️', rainy:'🌧️', drizzle:'🌦️', thunderstorm:'⛈️', snowy:'❄️', snow:'❄️', hail:'🌨️', windy:'💨' }[cond] || '🌤️';
+        const wt = parseFloat(wSt.attributes?.temperature);
+        wxChip.textContent = wxIcon + ' ' + (isNaN(wt) ? '--°' : Math.round(wt) + '°');
+        wxChip.style.display = 'flex';
+      } else {
+        wxChip.style.display = 'none';
+      }
+    }
     // Refresh climate name label
     const climLbl = getEl('monClimLabel');
     if (climLbl) climLbl.textContent = this.config.clim_ac_name || 'CLIMATE';
@@ -3862,6 +3879,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.14',
+  version: '2.9.15',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
