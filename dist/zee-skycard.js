@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.15
+// zee-skycard.js – Sky Edition v2.9.16
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -471,6 +471,7 @@ class ZeeSkyCardEditor extends HTMLElement {
       numberField('lower_section_offset', 'Flow diagram vertical offset', -80, 80, 1, 'SVG units (− = up)'),
       divider(),
       picker('weather_entity', 'Weather Entity (sky images)',    true, 'Drives the background sky image. Without it the card falls back to sky-clear-day.'),
+      switchRow('_show_weather_chip', '🌤️ Show Weather Chip', 'Shows the weather condition + temperature chip (uses Weather Entity).'),
     ]));
 
     // ── Labels: global gate + per-row activation ──
@@ -1073,6 +1074,7 @@ class ZeeSkyCard extends HTMLElement {
       charger_battery_capacity_wh: 0,
       sun: 'sun.sun',           // always auto-resolved; kept for YAML compat only
       weather_entity: 'weather.home',
+      _show_weather_chip: true,
       inverter_name: '',
       label_cell_temp_minmax: 'CELL TEMP',
       label_bms_temp: 'BMS TEMP',
@@ -2174,7 +2176,7 @@ class ZeeSkyCard extends HTMLElement {
     </style>
     <div class="kfc-shell" id="kfcShell">
       <div id="kfcSkyDiv" aria-hidden="true"></div>
-      <div id="kfcWeatherChip" style="position:absolute;top:8px;left:10px;z-index:3;display:none;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.12);color:#e0e8f0;font-size:.72rem;font-weight:650;letter-spacing:.3px;pointer-events:none"></div>
+      <div id="kfcWeatherChip" style="position:absolute;top:8px;right:10px;z-index:3;display:none;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.12);color:#e0e8f0;font-size:.72rem;font-weight:650;letter-spacing:.3px;pointer-events:none"></div>
       <div id="kfcBottomGrad" style="position:absolute;top:58%;left:0;right:0;bottom:0;pointer-events:none;z-index:0;border-radius:0 0 14px 14px;transition:background 1.4s ease"></div>
       <div class="kfc-content" style="transform:translateY(-3%)">
       <div class="ct" style="position:absolute;top:25px">&#x2014; Energy Flow <span id="battStatusBadge" style="margin-left:auto;font-size:.62rem;font-weight:650;letter-spacing:1.5px;padding:2px 10px;border-radius:8px;background:rgba(0,0,0,.32);color:#a8b4c8;text-transform:uppercase;border:1px solid rgba(255,255,255,.09)">IDLE</span></div>
@@ -3821,11 +3823,12 @@ if (_pvVoltTileLbl) _pvVoltTileLbl.textContent = this.config.label_pv_voltage ||
         });
       });
     }
-    // Weather chip (top-left): condition icon + temperature from weather_entity
+    // Weather chip (top-right): condition icon + temperature from weather_entity
     const wxChip = getEl('kfcWeatherChip');
     if (wxChip) {
+      const showWx = this.config._show_weather_chip !== false;
       const wEid = this.config.weather_entity;
-      const wSt = wEid && this._hass?.states?.[wEid];
+      const wSt = showWx && wEid && this._hass?.states?.[wEid];
       const wOk = wSt && wSt.state !== 'unavailable' && wSt.state !== 'unknown';
       if (wOk) {
         const cond = this._wxCondition();
@@ -3879,6 +3882,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.15',
+  version: '2.9.16',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
