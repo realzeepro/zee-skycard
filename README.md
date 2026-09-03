@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.9.12**
+`zee-skycard.js` · Sky Edition **v2.9.13**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -450,6 +450,7 @@ Full visual overhaul of `khan-skycard`. Forked into a separate repository as **z
 - When installed manually, register as `type: module` in Resources.
 - Energy units are read from each sensor (`kWh`, `Wh`, `MWh`) and shown as-is.
 - Temperature values display in the sensor's own unit (`°C`/`°F`); the colour thresholds are °C-based (see Colour Logic).
+- Stat/strip tile values (Cell Temp, BMS Temp, PV Voltages, Cell Volt, Today Import/Export, Charge/Discharge, Today/Total PV, Total Batt Charge/Discharge, Grid Import/Export, Today/Total Load) open the HA more-info dialog for their source entity when clicked.
 
 ---
 
@@ -526,4 +527,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.9.12*
+*Zee Energy · zee-skycard · Sky Edition v2.9.13*

@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.12
+// zee-skycard.js – Sky Edition v2.9.13
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -2062,6 +2062,8 @@ class ZeeSkyCard extends HTMLElement {
     const ev   = !!(this.config._show_ev);
     const showPvExtra = !!(this.config._show_pv_extra);
     const iconPath = '/local/community/zee-skycard';    // icons served from HACS community folder
+    // Resolve the source entity for a stat/strip value (override picker → main sensor → fallback default)
+    const _eid = (overrideKey, mainKey, fallback = '') => this.config[overrideKey] || this.config[mainKey] || fallback || '';
 
     const pv3txt = showPvExtra ? `<text id="pv3FlowVal" x="450" y="421" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
     const pv4txt = showPvExtra ? `<text id="pv4FlowVal" x="500" y="421" text-anchor="middle" font-size="11" font-weight="650" fill="#ffe83c">-- W</text>` : '';
@@ -2393,21 +2395,14 @@ class ZeeSkyCard extends HTMLElement {
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px">
         <div class="st">
           <div style="min-width:0;width:100%">
-            <div class="l">${this.config.label_cell_temp_minmax||'CELL TEMP'}</div>
             ${(this.config._labels_custom_entities && this.config.label_entity_cell_temp) ? `
-            <div class="v" id="bTemp1" style="color:#e0e8f0;margin-top:4px;font-size:.75rem">--</div>
+            <div class="l">${this.config.label_cell_temp_minmax||'CELL TEMP'}</div>
+            <div class="v" id="bTemp1" data-eid="${_eid('label_entity_cell_temp','battery_temp1')}" style="color:#e0e8f0;margin-top:4px;font-size:.75rem;cursor:pointer">--</div>
             <span id="bTemp1b" style="display:none"></span>` : `
-            <div style="display:flex;justify-content:space-evenly;align-items:center;width:100%;margin-top:2px">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
-                <span style="font-size:.55rem;color:rgba(200,215,235,0.50);letter-spacing:1px;text-transform:uppercase">T1</span>
-                <span id="bTemp1" style="font-size:.75rem;font-weight:650;color:#e0e8f0">--</span>
-              </div>
-              <div style="width:1px;height:24px;background:rgba(255,255,255,0.12)"></div>
-              <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
-                <span style="font-size:.55rem;color:rgba(200,215,235,0.50);letter-spacing:1px;text-transform:uppercase">T2</span>
-                <span id="bTemp1b" style="font-size:.75rem;font-weight:650;color:#e0e8f0">-- °C</span>
-              </div>
-            </div>`}
+            <div class="l">Cell Temp MIN</div>
+            <div class="v" id="bTemp1" data-eid="${_eid('label_entity_cell_temp','battery_temp1')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- °C</div>
+            <div class="l" style="margin-top:2px">Cell Temp MAX</div>
+            <div class="v" id="bTemp1b" data-eid="${_eid('label_entity_cell_temp','battery_temp2')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- °C</div>`}
           </div>
         </div>
         <div class="st stm">
@@ -2415,7 +2410,7 @@ class ZeeSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">&#x1F321;&#xFE0F;</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_bms_temp||'BMS TEMP'}</div>
-              <div class="v" id="bTemp2" style="color:#e0e8f0;font-size:.75rem">-- &#x00B0;C</div>
+              <div class="v" id="bTemp2" data-eid="${_eid('label_entity_bms_temp','battery_mos')}" style="color:#e0e8f0;font-size:.75rem;cursor:pointer">-- &#x00B0;C</div>
             </div>
           </div>
         </div>
@@ -2423,10 +2418,10 @@ class ZeeSkyCard extends HTMLElement {
           <div style="min-width:0;width:100%">
             <div class="l" style="margin-bottom:4px">${this.config.label_pv_voltage||'PV VOLTAGE'}</div>
             <div style="display:flex;justify-content:space-evenly;align-items:center;width:100%">
-              <span id="bPv1Volt" style="font-size:.75rem;font-weight:650;color:#ffe83c">-- V</span>
-              <span id="bPv2Volt" style="font-size:.75rem;font-weight:650;color:#ffe83c">-- V</span>
-              ${showPvExtra ? `<span id="bPv3Volt" style="font-size:.75rem;font-weight:650;color:#ffe83c">-- V</span>` : ''}
-              ${showPvExtra ? `<span id="bPv4Volt" style="font-size:.75rem;font-weight:650;color:#ffe83c">-- V</span>` : ''}
+              <span id="bPv1Volt" data-eid="${_eid('label_entity_pv_voltage','pv1_voltage')}" style="font-size:.75rem;font-weight:650;color:#ffe83c;cursor:pointer">-- V</span>
+              <span id="bPv2Volt" data-eid="${_eid('label_entity_pv_voltage','pv2_voltage')}" style="font-size:.75rem;font-weight:650;color:#ffe83c;cursor:pointer">-- V</span>
+              ${showPvExtra ? `<span id="bPv3Volt" data-eid="${this.config.pv3_voltage||''}" style="font-size:.75rem;font-weight:650;color:#ffe83c;cursor:${this.config.pv3_voltage ? 'pointer' : 'default'}">-- V</span>` : ''}
+              ${showPvExtra ? `<span id="bPv4Volt" data-eid="${this.config.pv4_voltage||''}" style="font-size:.75rem;font-weight:650;color:#ffe83c;cursor:${this.config.pv4_voltage ? 'pointer' : 'default'}">-- V</span>` : ''}
             </div>
           </div>
         </div>
@@ -2436,21 +2431,14 @@ class ZeeSkyCard extends HTMLElement {
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
         <div class="st">
           <div style="min-width:0;width:100%">
-            <div class="l">${this.config.label_cell_volt||'CELL VOLT'}</div>
             ${(this.config._labels_custom_entities && this.config.label_entity_cell_volt) ? `
-            <div class="v" id="bMinCell" style="color:#e0e8f0;margin-top:4px;font-size:.75rem">-- V</div>
+            <div class="l">${this.config.label_cell_volt||'CELL VOLT'}</div>
+            <div class="v" id="bMinCell" data-eid="${_eid('label_entity_cell_volt','battery_min_cell')}" style="color:#e0e8f0;margin-top:4px;font-size:.75rem;cursor:pointer">-- V</div>
             <span id="bMaxCell" style="display:none"></span>` : `
-            <div style="display:flex;justify-content:space-evenly;align-items:center;width:100%;margin-top:2px">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
-                <span style="font-size:.55rem;color:rgba(200,215,235,0.50);letter-spacing:1px;text-transform:uppercase">MIN</span>
-                <span id="bMinCell" style="font-size:.75rem;font-weight:650;color:#e0e8f0">-- V</span>
-              </div>
-              <div style="width:1px;height:24px;background:rgba(255,255,255,0.12)"></div>
-              <div style="display:flex;flex-direction:column;align-items:center;gap:1px">
-                <span style="font-size:.55rem;color:rgba(200,215,235,0.50);letter-spacing:1px;text-transform:uppercase">MAX</span>
-                <span id="bMaxCell" style="font-size:.75rem;font-weight:650;color:#e0e8f0">-- V</span>
-              </div>
-            </div>`}
+            <div class="l">Cell MIN V</div>
+            <div class="v" id="bMinCell" data-eid="${_eid('label_entity_cell_volt','battery_min_cell')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- V</div>
+            <div class="l" style="margin-top:2px">Cell Max V</div>
+            <div class="v" id="bMaxCell" data-eid="${_eid('label_entity_cell_volt','battery_max_cell')}" style="font-size:.75rem;font-weight:650;color:#e0e8f0;cursor:pointer">-- V</div>`}
           </div>
         </div>
         <div class="st stm">
@@ -2458,9 +2446,9 @@ class ZeeSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">⚡</span>
             <div style="min-width:0">
               <div class="l" id="invTodayImportLbl">${this.config.label_grid_import_today||'Today Import'}</div>
-              <div class="v" id="invTodayImport" style="color:#f39c4b;font-size:.75rem">-- kWh</div>
+              <div class="v" id="invTodayImport" data-eid="${this.config.grid_today_import||'sensor.goodwe_today_import_meter_calculated'}" style="color:#f39c4b;font-size:.75rem;cursor:pointer">-- kWh</div>
               <div class="l" id="invTodayExportLbl">${this.config.label_grid_export_today||'Today Export'}</div>
-              <div class="v" id="invTodayExport" style="color:#4ade80;font-size:.75rem">-- kWh</div>
+              <div class="v" id="invTodayExport" data-eid="${this.config.grid_today_export||'sensor.goodwe_today_export_meter_calculated'}" style="color:#4ade80;font-size:.75rem;cursor:pointer">-- kWh</div>
             </div>
           </div>
         </div>
@@ -2469,9 +2457,9 @@ class ZeeSkyCard extends HTMLElement {
             <span style="font-size:1.0rem;line-height:1;flex-shrink:0">🔋</span>
             <div style="min-width:0">
               <div class="l">${this.config.label_today_batt_charge||'Charge'}</div>
-              <div class="v" id="invTodayBattChg" style="color:#29b6f6;font-size:.75rem">-- kWh</div>
+              <div class="v" id="invTodayBattChg" data-eid="${_eid('label_entity_chg_dis','today_batt_chg')}" style="color:#29b6f6;font-size:.75rem;cursor:pointer">-- kWh</div>
               <div class="l">${this.config.label_today_batt_discharge||'Discharge'}</div>
-              <div class="v" id="invTodayBattDis" style="color:#29b6f6;font-size:.75rem">-- kWh</div>
+              <div class="v" id="invTodayBattDis" data-eid="${this.config.batt_dis||''}" style="color:#29b6f6;font-size:.75rem;cursor:${this.config.batt_dis ? 'pointer' : 'default'}">-- kWh</div>
             </div>
           </div>
         </div>
@@ -2497,30 +2485,30 @@ class ZeeSkyCard extends HTMLElement {
         <div class="pvi">
           <span class="ico">☀️</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Today PV</span>
-          <span id="invTodayPv" style="font-size:.72rem;font-weight:650;color:#f4d03f">-- kWh</span>
+          <span id="invTodayPv" data-eid="${_eid('label_entity_today_pv','today_pv')}" style="font-size:.72rem;font-weight:650;color:#f4d03f;cursor:pointer">-- kWh</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total PV</span>
-          <span id="invTotalPv" style="font-size:.72rem;font-weight:650;color:#f4d03f">-- kWh</span>
+          <span id="invTotalPv" data-eid="${this.config.total_pv||''}" style="font-size:.72rem;font-weight:650;color:#f4d03f;cursor:${this.config.total_pv ? 'pointer' : 'default'}">-- kWh</span>
         </div>
         <div class="pvi">
           <span class="ico">🔋</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Total Batt Charge</span>
-          <span id="invTotalBattChg" style="font-size:.72rem;font-weight:650;color:#3fb950">-- kWh</span>
+          <span id="invTotalBattChg" data-eid="${this.config.total_batt_chg||''}" style="font-size:.72rem;font-weight:650;color:#3fb950;cursor:${this.config.total_batt_chg ? 'pointer' : 'default'}">-- kWh</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total Batt Discharge</span>
-          <span id="invTotalBattDis" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
+          <span id="invTotalBattDis" data-eid="${this.config.total_batt_dis||''}" style="font-size:.72rem;font-weight:650;color:#f39c4b;cursor:${this.config.total_batt_dis ? 'pointer' : 'default'}">-- kWh</span>
         </div>
         <div class="pvi">
           <span class="ico">🔌</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Grid Export</span>
-          <span id="invGridExport" style="font-size:.72rem;font-weight:650;color:#4ade80">-- kWh</span>
+          <span id="invGridExport" data-eid="${this.config.grid_export_today||''}" style="font-size:.72rem;font-weight:650;color:#4ade80;cursor:${this.config.grid_export_today ? 'pointer' : 'default'}">-- kWh</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Grid Import</span>
-          <span id="invGridImport" style="font-size:.72rem;font-weight:650;color:#f39c4b">-- kWh</span>
+          <span id="invGridImport" data-eid="${_eid('label_entity_grid_import','grid_import_today','sensor.goodwe_today_energy_import')}" style="font-size:.72rem;font-weight:650;color:#f39c4b;cursor:pointer">-- kWh</span>
         </div>
         <div class="pvi">
           <span class="ico">🏡</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase">Today Load</span>
-          <span id="invTodayLoad" style="font-size:.72rem;font-weight:650;color:#29b6f6">-- kWh</span>
+          <span id="invTodayLoad" data-eid="${_eid('label_entity_today_load','today_load')}" style="font-size:.72rem;font-weight:650;color:#29b6f6;cursor:pointer">-- kWh</span>
           <span style="font-size:.52rem;color:rgba(200,215,235,0.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px">Total Load</span>
-          <span id="invTotalLoad" style="font-size:.72rem;font-weight:650;color:#e0e8f0">-- kWh</span>
+          <span id="invTotalLoad" data-eid="${this.config.total_load_entity||''}" style="font-size:.72rem;font-weight:650;color:#e0e8f0;cursor:${this.config.total_load_entity ? 'pointer' : 'default'}">-- kWh</span>
         </div>
       </div>
 
@@ -2558,6 +2546,19 @@ class ZeeSkyCard extends HTMLElement {
       }`;})()}
       </div><!-- /kfc-content -->
     </div><!-- /kfc-shell -->`;
+    // Stat/strip tile values: clicking one opens HA more-info for its source entity
+    if (!this._moreInfoBound) {
+      this._moreInfoBound = true;
+      this.shadowRoot.addEventListener('click', (e) => {
+        const el = e.target.closest && e.target.closest('[data-eid]');
+        if (!el) return;
+        const eid = el.getAttribute('data-eid');
+        if (!eid) return;
+        e.stopPropagation();
+        window.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: eid } }));
+        this.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: eid }, bubbles: true, composed: true }));
+      });
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -3856,6 +3857,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.12',
+  version: '2.9.13',
 });
 customElements.define('zee-skycard', ZeeSkyCard);
