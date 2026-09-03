@@ -1,4 +1,4 @@
-// zee-skycard.js – Sky Edition v2.9.11
+// zee-skycard.js – Sky Edition v2.9.12
 
 class ZeeSkyCardEditor extends HTMLElement {
   constructor() {
@@ -769,10 +769,14 @@ class ZeeSkyCardEditor extends HTMLElement {
       divider(),
       makeSection('mon_waterheater', '♨️', 'Water Heater', [
         textField('water_heater_name', 'Water Heater Name', 'Water Heater'),
-        picker('water_heater_current_temp', 'Current Temp', true),
-        picker('water_heater_set_temp', 'Set Temp', true),
+        picker('water_heater_entity', 'Water Heater Entity', true, 'Reads Current/Set temp from its current_temperature + temperature attributes.'),
+        picker('water_heater_current_temp', 'Current Temp (override)', true),
+        picker('water_heater_set_temp', 'Set Temp (override)', true),
         picker('water_heater_mode', 'Mode', true),
         picker('water_heater_power', 'Power', true),
+        picker('water_heater_heating', 'Heating Status', true),
+        picker('water_heater_time_remaining', 'Heating Time Remaining', true),
+        picker('water_heater_consumption', 'Water Consumption', true),
       ], { toggleKey: '_show_water_heater', toggleOn: showWH, hidden: !showWH }),
     ]));
 
@@ -1170,7 +1174,9 @@ class ZeeSkyCard extends HTMLElement {
       fridge_mode: '', fridge_door: '', freezer_door: '',
       _show_water_heater: false,
       water_heater_name: 'Water Heater',
+      water_heater_entity: '',
       water_heater_current_temp: '', water_heater_set_temp: '', water_heater_mode: '', water_heater_power: '',
+      water_heater_heating: '', water_heater_time_remaining: '', water_heater_consumption: '',
       // ── System monitoring entities ──
       sys_cpu_entity: '',
       sys_mem_entity: '',
@@ -2001,17 +2007,34 @@ class ZeeSkyCard extends HTMLElement {
     const name = this.config.water_heater_name || 'Water Heater';
     const v = (e) => { const r = this._val(e); return r !== null && !isNaN(r) ? r : null; };
     const s = (e) => { const r = this._strVal(e); return r || null; };
-    const ct = v(this.config.water_heater_current_temp);
-    const st = v(this.config.water_heater_set_temp);
+    // Water Heater entity — supplies Current (current_temperature) + Set (temperature) attributes
+    const weId = this.config.water_heater_entity || '';
+    const weState = weId && this._hass?.states?.[weId];
+    const weOk = weState && weState.state !== 'unavailable' && weState.state !== 'unknown';
+    const weCur = weOk ? parseFloat(weState.attributes?.current_temperature) : null;
+    const weSet = weOk ? parseFloat(weState.attributes?.temperature) : null;
+    // Override pickers take precedence when set; otherwise fall back to entity attributes
+    const ct = this.config.water_heater_current_temp ? v(this.config.water_heater_current_temp) : (!isNaN(weCur) ? weCur : null);
+    const st = this.config.water_heater_set_temp ? v(this.config.water_heater_set_temp) : (!isNaN(weSet) ? weSet : null);
     const pw = v(this.config.water_heater_power);
+    const tr = v(this.config.water_heater_time_remaining);
+    const wc = v(this.config.water_heater_consumption);
+    const ctEid = this.config.water_heater_current_temp || weId;
+    const stEid = this.config.water_heater_set_temp || weId;
     let mode = s(this.config.water_heater_mode);
     if (mode === 'unavailable' || mode === 'unknown') mode = null;
+    const heat = s(this.config.water_heater_heating);
+    const heatOn  = heat && ['on', 'running', 'true', 'yes', 'heating', 'active'].includes(heat);
+    const heatOff = heat && ['off', 'not running', 'false', 'no', 'idle', 'standby', 'notrunning'].includes(heat.replace(/\s+/g, ''));
+    const heatText = this.config.water_heater_heating ? (heatOn ? 'RUNNING' : heatOff ? 'OFF' : '--') : '';
     const metric = (icon, label, value, clr, eid) => `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:9px 6px;text-align:center${eid ? ';cursor:pointer' : ''}"${eid ? ` data-eid="${eid}"` : ''}>
       <div style="font-size:.54rem;letter-spacing:1px;text-transform:uppercase;color:rgba(200,215,235,0.5);margin-bottom:4px">${icon} ${label}</div>
       <div style="font-size:1.05rem;font-weight:700;color:${clr};line-height:1.1">${value}</div>
     </div>`;
     const tempColor = (t) => t !== null ? (t <= 35 ? '#29b6f6' : t <= 55 ? '#3fb950' : t <= 75 ? '#f39c4b' : '#ef4444') : '#8b949e';
     const pwrV = pw !== null ? (pw >= 1000 ? (pw / 1000).toFixed(1) + ' kW' : pw.toFixed(0) + ' W') : '--';
+    const trV = tr !== null ? Math.round(tr) + ' min' : '--';
+    const wcV = wc !== null ? wc.toFixed(1) + ' L' : '--';
     this._popup(this._popupClose() + this._popupTitle('♨️ Water Heater') +
       `<div style="background:rgba(255,255,255,0.045);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:10px">
         <div style="display:flex;align-items:center;justify-content:space-between">
@@ -2023,9 +2046,12 @@ class ZeeSkyCard extends HTMLElement {
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-        ${metric('🌡️', 'Current', ct !== null ? ct.toFixed(1) + ' °C' : '-- °C', tempColor(ct), this.config.water_heater_current_temp)}
-        ${metric('🎚️', 'Set', st !== null ? st.toFixed(1) + ' °C' : '-- °C', st !== null ? '#f39c4b' : '#8b949e', this.config.water_heater_set_temp)}
+        ${metric('🌡️', 'Current', ct !== null ? ct.toFixed(1) + ' °C' : '-- °C', tempColor(ct), ctEid)}
+        ${metric('🎚️', 'Set', st !== null ? st.toFixed(1) + ' °C' : '-- °C', st !== null ? '#f39c4b' : '#8b949e', stEid)}
         ${metric('⚡', 'Power', pwrV, pw !== null ? '#f39c4b' : '#8b949e', this.config.water_heater_power)}
+        ${heatText ? metric('🔥', 'Heating', heatText, heatOn ? '#4ade80' : '#8b949e', this.config.water_heater_heating) : metric('🔥', 'Heating', '--', '#8b949e', this.config.water_heater_heating)}
+        ${metric('⏱️', 'Time Left', trV, tr !== null ? '#58a6ff' : '#8b949e', this.config.water_heater_time_remaining)}
+        ${metric('💧', 'Consumption', wcV, wc !== null ? '#29b6f6' : '#8b949e', this.config.water_heater_consumption)}
       </div>`);
   }
 
@@ -3804,15 +3830,19 @@ if (_pvVoltTileLbl) _pvVoltTileLbl.textContent = this.config.label_pv_voltage ||
     const whTile = getEl('monWhTile');
     const roomsTile = getEl('monRoomsTile');
     if (whTile && roomsTile) {
-      const whAvail = !!this.config.water_heater_current_temp && this._val(this.config.water_heater_current_temp) !== null;
+      const whTempAvail = !!this.config.water_heater_current_temp && this._val(this.config.water_heater_current_temp) !== null;
+      const whEntState = this.config.water_heater_entity ? this._hass?.states?.[this.config.water_heater_entity] : null;
+      const whEntAvail = !!whEntState && whEntState.state !== 'unavailable' && whEntState.state !== 'unknown';
+      const whAvail = whTempAvail || whEntAvail;
       whTile.style.display = whAvail ? '' : 'none';
       roomsTile.style.display = whAvail ? 'none' : '';
       const whLbl = getEl('monWhLabel');
       if (whLbl) whLbl.textContent = this.config.water_heater_name || 'WATER HEATER';
       const whVal = getEl('monWhVal');
       if (whVal) {
-        const wt = this._val(this.config.water_heater_current_temp);
-        whVal.textContent = wt !== null ? wt.toFixed(0) + ' °C' : '--';
+        const wt = this.config.water_heater_current_temp ? this._val(this.config.water_heater_current_temp)
+          : (whEntAvail ? parseFloat(whEntState.attributes?.current_temperature) : null);
+        whVal.textContent = wt !== null && !isNaN(wt) ? wt.toFixed(0) + ' °C' : '--';
       }
     }
     // Row2 visibility
@@ -3826,6 +3856,6 @@ window.customCards.push({
   name: 'Zee SkyCard',
   description: 'Real-time solar/battery/grid energy flow card. indcolor system: threshold-driven colors (amber/red). Per-tile font sizes. Typography & threshold config. Load display below house.',
   preview: true,
-  version: '2.9.11',
+  version: '2.9.12',
 });
 customElements.define('zee-skycard', ZeeSkyCard);

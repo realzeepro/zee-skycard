@@ -2,7 +2,7 @@
 
 **Zee Energy — Home Assistant Custom Energy Flow Card · Sky Edition**
 
-`zee-skycard.js` · Sky Edition **v2.9.11**
+`zee-skycard.js` · Sky Edition **v2.9.12**
 
 <img src="https://raw.githubusercontent.com/realzeepro/zee-skycard/main/screenshots/screenshot-skycard.png" alt="Zee Skycard">
 
@@ -306,16 +306,22 @@ Enable the **Fridge** section to show fridge and freezer temperatures, set tempe
 
 ### Water Heater ♨️
 
-Enable the **Water Heater** section to show current/set temperature, mode, and power. Its monitoring tile **replaces the Rooms tile** whenever the water heater's current-temperature sensor is available; when the sensor is unavailable, the Water Heater tile is hidden and the Rooms tile shows normally. Every value opens the HA more-info dialog on click.
+Enable the **Water Heater** section to show current/set temperature, heating status, power, heating time remaining, and water consumption. Its monitoring tile **replaces the Rooms tile** whenever the water heater is available (either its current-temperature override sensor or its water heater entity); when unavailable, the Water Heater tile is hidden and the Rooms tile shows normally. Every value opens the HA more-info dialog on click.
+
+When **Water Heater Entity** is set, Current and Set temperatures are read from its `current_temperature` / `temperature` attributes (like a Midea `water_heater.*` entity); the separate override pickers take precedence when filled in.
 
 | Key | Default | Description |
 |---|---|---|
 | `_show_water_heater` | `false` | Show water heater tile (chip toggle) |
 | `water_heater_name` | `Water Heater` | Water heater display name |
-| `water_heater_current_temp` | `''` | Current water temperature |
-| `water_heater_set_temp` | `''` | Target water temperature |
+| `water_heater_entity` | `''` | Water heater entity — reads Current/Set from attributes |
+| `water_heater_current_temp` | `''` | Current water temperature (override) |
+| `water_heater_set_temp` | `''` | Target water temperature (override) |
 | `water_heater_mode` | `''` | Water heater mode entity (string) |
 | `water_heater_power` | `''` | Water heater power (W) |
+| `water_heater_heating` | `''` | Heating status (running/not) |
+| `water_heater_time_remaining` | `''` | Heating time remaining (min) |
+| `water_heater_consumption` | `''` | Water consumption (L) |
 
 ### Others
 
@@ -520,4 +526,4 @@ Include when filing an issue:
 
 ---
 
-*Zee Energy · zee-skycard · Sky Edition v2.9.11*
+*Zee Energy · zee-skycard · Sky Edition v2.9.12*
